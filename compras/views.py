@@ -30,6 +30,9 @@ def registrar_compra(request):
                     producto = Producto.objects.get(id=item["id"])
                     cantidad = int(item["cantidad"])
                     costo_unitario = float(item["costo_unitario"])
+                    if costo_unitario > 0:
+                        producto.precio_compra = costo_unitario
+                        producto.save()
                     DetalleCompra.objects.create(
                         compra=compra,
                         producto=producto,
@@ -40,5 +43,42 @@ def registrar_compra(request):
         except Exception as e:
             return JsonResponse({"ok": False, "error": str(e)}, status=400)
 
-    productos = Producto.objects.all()
+    productos = Producto.objects.all().order_by('nombre')
     return render(request, 'compras/registrar_compra.html', {'productos': productos})
+
+@login_required
+def crear_producto_ajax(request):
+    if request.method == 'POST':
+        try:
+            datos = json.loads(request.body)
+            nombre = datos.get("nombre", "").strip()
+            categoria = datos.get("categoria", "General").strip() or "General"
+            precio_compra = float(datos.get("precio_compra", 0))
+            precio_venta = float(datos.get("precio_venta", 0))
+            stock_minimo = int(datos.get("stock_minimo", 5))
+
+            if not nombre:
+                return JsonResponse({"ok": False, "error": "El nombre del producto es obligatorio."}, status=400)
+
+            producto = Producto.objects.create(
+                nombre=nombre,
+                categoria=categoria,
+                precio_compra=precio_compra,
+                precio_venta=precio_venta,
+                stock=0,
+                stock_minimo=stock_minimo
+            )
+
+            return JsonResponse({
+                "ok": True,
+                "producto": {
+                    "id": producto.id,
+                    "nombre": producto.nombre,
+                    "precio_compra": float(producto.precio_compra),
+                    "stock": producto.stock
+                }
+            })
+        except Exception as e:
+            return JsonResponse({"ok": False, "error": str(e)}, status=400)
+    return JsonResponse({"ok": False, "error": "Método no permitido"}, status=405)
+

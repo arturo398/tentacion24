@@ -1,4 +1,6 @@
-from django.shortcuts import render
+from django.contrib.auth import logout
+from django.shortcuts import render, redirect
+from django.contrib import messages
 from .models import Producto
 from compras.models import Compra
 from ventas.models import Venta
@@ -6,6 +8,12 @@ from django.db.models import Q, F
 from django.utils import timezone
 from datetime import datetime, timedelta
 import json
+
+def logout_view(request):
+    logout(request)
+    messages.success(request, "Sesión cerrada correctamente.")
+    return redirect('login')
+
 
 def listar_productos(request):
 

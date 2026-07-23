@@ -25,7 +25,12 @@ Registrar Compra
                     </div>
                     <hr>
                     <div class="mb-3">
-                        <label for="producto-select" class="form-label fw-bold">Producto</label>
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <label for="producto-select" class="form-label fw-bold mb-0">Producto</label>
+                            <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalNuevoProducto">
+                                <i class="bi bi-plus-circle me-1"></i> + Nuevo Producto
+                            </button>
+                        </div>
                         <select id="producto-select" class="form-select">
                             <option value="">Seleccione un producto...</option>
                             {% for producto in productos %}
@@ -76,6 +81,48 @@ Registrar Compra
     </div>
 </div>
 
+<!-- Modal Nuevo Producto -->
+<div class="modal fade" id="modalNuevoProducto" tabindex="-1" aria-labelledby="modalNuevoProductoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="modalNuevoProductoLabel">➕ Registrar Nuevo Producto</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="form-nuevo-producto">
+                    <div class="mb-3">
+                        <label for="np-nombre" class="form-label fw-bold">Nombre del Producto *</label>
+                        <input type="text" id="np-nombre" class="form-control" required placeholder="Ej. Alfajor Guaymallén">
+                    </div>
+                    <div class="mb-3">
+                        <label for="np-categoria" class="form-label fw-bold">Categoría</label>
+                        <input type="text" id="np-categoria" class="form-control" placeholder="Ej. Golosinas, Bebidas..." value="General">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="np-costo" class="form-label fw-bold">Precio Compra / Costo ($)</label>
+                            <input type="number" id="np-costo" class="form-control" min="0" step="0.01" value="0.00">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="np-venta" class="form-label fw-bold">Precio Venta ($) *</label>
+                            <input type="number" id="np-venta" class="form-control" min="0" step="0.01" value="0.00" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="np-stock-min" class="form-label fw-bold">Stock Mínimo</label>
+                        <input type="number" id="np-stock-min" class="form-control" min="0" value="5">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btn-guardar-producto-modal" class="btn btn-success">Guardar e Incluir en Compra</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener("DOMContentLoaded", () => {
     let items = [];
@@ -87,6 +134,71 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalHeader = document.getElementById("total-compra");
     const btnFinalizar = document.getElementById("btn-finalizar-compra");
     const proveedorInput = document.getElementById("proveedor");
+
+    // Lógica para guardar nuevo producto vía Modal
+    const btnGuardarModal = document.getElementById("btn-guardar-producto-modal");
+    btnGuardarModal.addEventListener("click", async () => {
+        const nombre = document.getElementById("np-nombre").value.trim();
+        const categoria = document.getElementById("np-categoria").value.trim();
+        const precio_compra = parseFloat(document.getElementById("np-costo").value) || 0;
+        const precio_venta = parseFloat(document.getElementById("np-venta").value) || 0;
+        const stock_minimo = parseInt(document.getElementById("np-stock-min").value) || 5;
+
+        if (!nombre) {
+            alert("Por favor ingrese el nombre del producto.");
+            return;
+        }
+
+        btnGuardarModal.disabled = true;
+        btnGuardarModal.textContent = "Guardando...";
+
+        try {
+            const res = await fetch("{% url 'crear_producto_ajax' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    nombre: nombre,
+                    categoria: categoria,
+                    precio_compra: precio_compra,
+                    precio_venta: precio_venta,
+                    stock_minimo: stock_minimo
+                })
+            });
+
+            const data = await res.json();
+            if (data.ok) {
+                // Añadir opción al select de productos y seleccionarla
+                const option = document.createElement("option");
+                option.value = data.producto.id;
+                option.dataset.nombre = data.producto.nombre;
+                option.dataset.costo = data.producto.precio_compra;
+                option.textContent = `${data.producto.nombre} (Stock actual: 0)`;
+                option.selected = true;
+                prodSelect.appendChild(option);
+
+                // Actualizar costo sugerido
+                costoInput.value = data.producto.precio_compra.toFixed(2);
+
+                // Resetear form y cerrar modal
+                document.getElementById("form-nuevo-producto").reset();
+                const modalEl = document.getElementById("modalNuevoProducto");
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.hide();
+                alert("Producto creado exitosamente. Ya puedes ingresarlo a la compra.");
+            } else {
+                alert("Error al crear producto: " + data.error);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Error de red al crear el producto.");
+        } finally {
+            btnGuardarModal.disabled = false;
+            btnGuardarModal.textContent = "Guardar e Incluir en Compra";
+        }
+    });
 
     // Cuando cambia el producto seleccionado, actualizar el costo sugerido
     prodSelect.addEventListener("change", () => {
@@ -237,4 +349,5 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 });
 </script>
+
 {% endblock %}
