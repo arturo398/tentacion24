@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block titulo %}
+Punto de Venta - Tentación 24
+{% endblock %}
+
+{% block contenido %}
+
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 fw-bold">
+            <i class="bi bi-pc-display-horizontal text-primary"></i> Punto de Venta (POS)
+        </h2>
+        <div id="mensaje-pos"></div>
+    </div>
+
+    <div class="row">
+        <!-- PRODUCTOS -->
+        <div class="col-lg-8">
+            <!-- Buscador y Categorías -->
+            <div class="card shadow-sm border-0 mb-4 glass-panel p-3">
+                <div class="input-group input-group-lg mb-3">
+                    <span class="input-group-text border-0 bg-transparent text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" id="pos-search" class="form-control border-0 bg-transparent ps-0" placeholder="Buscar producto por nombre o categoría...">
+                </div>
+
+                <div class="d-flex flex-wrap gap-2" id="categorias-container">
+                    <button class="btn btn-dark btn-categoria" data-categoria="todos">
+                        <i class="bi bi-grid-fill me-1"></i> Todos
+                    </button>
+                    {% for cat in categorias %}
+                    <button class="btn btn-outline-dark btn-categoria" data-categoria="{{ cat }}">
+                        {% if "cerveza" in cat|lower %}
+                            <i class="bi bi-beer me-1"></i>
+                        {% elif "destilado" in cat|lower or "whisky" in cat|lower or "vodka" in cat|lower or "fernet" in cat|lower or "licor" in cat|lower %}
+                            <i class="bi bi-glass-straw me-1"></i>
+                        {% elif "gaseosa" in cat|lower or "bebida" in cat|lower or "gaseosas" in cat|lower or "jugo" in cat|lower %}
+                            <i class="bi bi-cup-straw me-1"></i>
+                        {% elif "hielo" in cat|lower %}
+                            <i class="bi bi-snow me-1"></i>
+                        {% else %}
+                            <i class="bi bi-tag-fill me-1"></i>
+                        {% endif %}
+                        {{ cat }}
+                    </button>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Tarjetas de Productos -->
+            <div class="row" id="productos-grid">
+                {% for producto in productos %}
+                <div class="col-md-4 mb-4 producto-col" data-categoria="{{ producto.categoria|lower }}" data-nombre="{{ producto.nombre|lower }}">
+                    <div class="card shadow-sm h-100 producto-card border-0 {% if producto.stock == 0 %}opacity-50{% endif %}"
+                         data-id="{{ producto.id }}"
+                         data-nombre="{{ producto.nombre }}"
+                         data-precio="{{ producto.precio_venta }}"
+                         data-stock="{{ producto.stock }}"
+                         style="cursor:pointer;"
+                    >
+                        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center p-4">
+                            <!-- Categoría Icono Dinámico -->
+                            {% if "cerveza" in producto.categoria|lower %}
+                                <div class="p-3 bg-warning bg-opacity-10 rounded-circle mb-3 text-warning">
+                                    <i class="bi bi-beer fs-1"></i>
+                                </div>
+                            {% elif "destilado" in producto.categoria|lower or "whisky" in producto.categoria|lower or "vodka" in producto.categoria|lower or "fernet" in producto.categoria|lower or "licor" in producto.categoria|lower %}
+                                <div class="p-3 bg-primary bg-opacity-10 rounded-circle mb-3 text-primary">
+                                    <i class="bi bi-glass-straw fs-1"></i>
+                                </div>
+                            {% elif "gaseosa" in producto.categoria|lower or "bebida" in producto.categoria|lower or "gaseosas" in producto.categoria|lower or "jugo" in producto.categoria|lower %}
+                                <div class="p-3 bg-info bg-opacity-10 rounded-circle mb-3 text-info">
+                                    <i class="bi bi-cup-straw fs-1"></i>
+                                </div>
+                            {% elif "hielo" in producto.categoria|lower %}
+                                <div class="p-3 bg-secondary bg-opacity-10 rounded-circle mb-3 text-light">
+                                    <i class="bi bi-snow fs-1"></i>
+                                </div>
+                            {% else %}
+                                <div class="p-3 bg-secondary bg-opacity-10 rounded-circle mb-3 text-secondary">
+                                    <i class="bi bi-tag fs-1"></i>
+                                </div>
+                            {% endif %}
+
+                            <h5 class="card-title fw-bold mb-1">{{ producto.nombre }}</h5>
+                            <span class="badge bg-secondary-subtle text-secondary-emphasis mb-3 px-2 py-1 text-uppercase small">{{ producto.categoria }}</span>
+
+                            {% if producto.stock == 0 %}
+                                <p class="texto-stock text-danger fw-bold mb-2 small"><i class="bi bi-x-circle-fill"></i> SIN STOCK</p>
+                            {% elif producto.stock <= producto.stock_minimo %}
+                                <p class="texto-stock text-warning fw-bold mb-2 small"><i class="bi bi-exclamation-triangle-fill"></i> STOCK BAJO: {{ producto.stock }}</p>
+                            {% else %}
+                                <p class="texto-stock text-success fw-bold mb-2 small"><i class="bi bi-check-circle-fill"></i> STOCK: {{ producto.stock }}</p>
+                            {% endif %}
+
+                            <h4 class="fw-extrabold text-primary mb-0">${{ producto.precio_venta }}</h4>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12">
+                    <div class="alert alert-warning text-center border-0 shadow-sm p-4">
+                        <i class="bi bi-exclamation-circle fs-2 d-block mb-2"></i>
+                        No hay productos cargados en el inventario.
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- CARRITO -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-lg glass-panel position-sticky" style="top: 20px;">
+                <div class="card-header bg-dark text-white border-0 py-3 d-flex justify-content-between align-items-center rounded-top-4">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-cart3"></i> Venta Actual</h5>
+                    <span class="badge bg-danger rounded-pill" id="cart-count">0 ítems</span>
+                </div>
+
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="mb-3">
+                        <label for="cliente-nombre" class="form-label fw-bold text-secondary small"><i class="bi bi-person-fill"></i> CLIENTE</label>
+                        <input type="text" id="cliente-nombre" class="form-control form-control-lg rounded-3" value="Consumidor Final" placeholder="Nombre del cliente...">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold text-secondary small d-block"><i class="bi bi-credit-card-2-back-fill"></i> MÉTODO DE PAGO</label>
+                        <div class="btn-group w-100" role="group" aria-label="Método de pago">
+                            <input type="radio" class="btn-check" name="metodo-pago" id="pago-efectivo" value="efectivo">
+                            <label class="btn btn-outline-primary" for="pago-efectivo">
+                                <i class="bi bi-cash"></i> Efectivo
+                            </label>
+                            
+                            <input type="radio" class="btn-check" name="metodo-pago" id="pago-transferencia" value="transferencia" checked>
+                            <label class="btn btn-outline-primary" for="pago-transferencia">
+                                <i class="bi bi-bank"></i> Transferencia
+                            </label>
+                        </div>
+                    </div>
+
+                    <hr class="text-muted">
+
+                    <div id="carrito" class="overflow-y-auto mb-3" style="max-height: 380px; min-height: 200px;">
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-cart-x fs-1 d-block mb-2"></i>
+                            El carrito está vacío.
+                        </div>
+                    </div>
+
+                    <hr class="text-muted mt-auto">
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="fs-4 fw-bold">Total a Pagar:</span>
+                        <span class="fs-2 fw-extrabold text-success" id="total">$0.00</span>
+                    </div>
+
+                    <button id="btn-finalizar" class="btn btn-success btn-lg w-100 py-3 rounded-3 fw-bold shadow">
+                        <i class="bi bi-check-lg"></i> Finalizar Venta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'ventas/js/pos.js' %}"></script>
+
+{% endblock %}
+

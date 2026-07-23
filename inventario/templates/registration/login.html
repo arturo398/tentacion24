@@ -1,0 +1,46 @@
+                                                                                                                                                                                                                                                                                                     {% extends 'base.html' %}
+
+{% block titulo %}
+Login
+{% endblock %}
+
+{% block contenido %}
+
+<div class="container mt-5" style="max-width: 500px;">
+
+    <div class="card">
+
+        <div class="card-body">
+
+            <h2 class="mb-4">
+                Iniciar Sesión
+            </h2>
+
+            {% if form.errors %}
+                <div class="alert alert-danger">
+                    Por favor, ingresa un usuario y contraseña correctos.
+                </div>
+            {% endif %}
+
+            <form method="post">
+
+                {% csrf_token %}
+
+                {{ form.as_p }}
+
+                <button
+                    type="submit"
+                    class="btn btn-primary"
+                >
+                    Ingresar
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

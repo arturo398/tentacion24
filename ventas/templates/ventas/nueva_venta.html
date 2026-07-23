@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Nueva Venta - Tentación 24
+{% endblock %}
+
+{% block contenido %}
+
+<div class="container mt-4" style="max-width: 600px;">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-dark text-white py-3">
+            <h5 class="mb-0 fw-bold"><i class="bi bi-cart-plus"></i> Registrar Nueva Venta</h5>
+        </div>
+        <div class="card-body p-4">
+            <form method="post">
+                {% csrf_token %}
+                
+                {{ form.as_p }}
+                
+                <div class="d-flex gap-2 justify-content-end mt-4">
+                    <a href="{% url 'ventas' %}" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary">
+                        Registrar y Añadir Productos
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,195 @@
+/* Import Google Font Outfit */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --font-family-sans-serif: 'Outfit', sans-serif;
+}
+
+/* Light Theme Variables */
+[data-bs-theme="light"] {
+    --bg-primary: #f8fafc;
+    --bg-card: #ffffff;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --accent-blue: #0284c7;
+    --accent-blue-rgb: 2, 132, 199;
+    --accent-red: #dc2626;
+    --accent-cream: #f8f6f0;
+    --border-color: #e2e8f0;
+    --nav-bg: #0f172a;
+    --nav-text: #f8fafc;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(226, 232, 240, 0.8);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --shadow-glow-blue: 0 0 15px rgba(2, 132, 199, 0.2);
+}
+
+/* Dark Theme Variables (Identity colors) */
+[data-bs-theme="dark"] {
+    --bg-primary: #090d16;
+    --bg-card: #111827;
+    --text-primary: #f5f0e1; /* Cream */
+    --text-secondary: #9ca3af;
+    --accent-blue: #00d2ff; /* Flame Blue */
+    --accent-blue-rgb: 0, 210, 255;
+    --accent-red: #ff3333; /* Red 24 */
+    --accent-cream: #f5f0e1;
+    --border-color: #1f2937;
+    --nav-bg: #030712;
+    --nav-text: #f5f0e1;
+    --glass-bg: rgba(17, 24, 39, 0.75);
+    --glass-border: rgba(31, 41, 55, 0.8);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -2px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.7), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
+    --shadow-glow-blue: 0 0 20px rgba(0, 210, 255, 0.35);
+    --shadow-glow-red: 0 0 20px rgba(255, 51, 51, 0.35);
+}
+
+body {
+    font-family: var(--font-family-sans-serif);
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Navbar Premium styling */
+.navbar-brand {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    font-size: 1.4rem;
+}
+.brand-flame {
+    color: var(--accent-blue);
+    text-shadow: var(--shadow-glow-blue);
+    font-weight: 800;
+}
+.brand-24 {
+    color: var(--accent-red);
+    font-weight: 900;
+}
+.brand-text {
+    color: var(--accent-cream);
+}
+
+.navbar {
+    background-color: var(--nav-bg) !important;
+    border-bottom: 1px solid var(--border-color);
+}
+.navbar-dark .navbar-nav .nav-link {
+    color: var(--nav-text);
+    opacity: 0.8;
+    font-weight: 500;
+    transition: opacity 0.2s, color 0.2s;
+}
+.navbar-dark .navbar-nav .nav-link:hover {
+    opacity: 1;
+    color: var(--accent-blue) !important;
+}
+
+/* Glassmorphism Classes */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-md);
+}
+
+/* Card Styling */
+.card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    border-radius: 12px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* Active Hover Card (POS) */
+.producto-card {
+    border-radius: 14px;
+    overflow: hidden;
+}
+.producto-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glow-blue);
+    border-color: var(--accent-blue);
+}
+
+/* Badges and tags */
+.badge {
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+/* Custom Table design */
+.table {
+    color: var(--text-primary);
+}
+.table-hover tbody tr:hover {
+    background-color: rgba(var(--accent-blue-rgb), 0.05) !important;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: var(--accent-blue);
+    border-color: var(--accent-blue);
+    font-weight: 600;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+.btn-primary:hover, .btn-primary:active, .btn-primary:focus {
+    background-color: #0274b3;
+    border-color: #0274b3;
+    box-shadow: var(--shadow-glow-blue);
+}
+.btn-danger {
+    background-color: var(--accent-red);
+    border-color: var(--accent-red);
+    font-weight: 600;
+    border-radius: 8px;
+}
+.btn-danger:hover {
+    box-shadow: var(--shadow-glow-red);
+}
+
+/* POS pills */
+.btn-categoria {
+    border-radius: 30px;
+    font-weight: 600;
+    padding: 6px 18px;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+/* Animated Cart Add */
+@keyframes pulseAdd {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); box-shadow: var(--shadow-glow-blue); }
+    100% { transform: scale(1); }
+}
+.pulse-animation {
+    animation: pulseAdd 0.3s ease;
+}
+
+/* Theme toggle switch style */
+.theme-toggle-btn {
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--nav-text);
+    font-size: 1.25rem;
+    padding: 4px 8px;
+    opacity: 0.8;
+    transition: opacity 0.2s, transform 0.2s;
+}
+.theme-toggle-btn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+    color: var(--accent-blue);
+}

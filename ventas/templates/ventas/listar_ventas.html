@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Ventas
+{% endblock %}
+
+{% block contenido %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="h2 fw-bold mb-0"><i class="bi bi-receipt text-primary"></i> Ventas Registradas</h1>
+    <a href="{% url 'pos' %}" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Nueva Venta
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body p-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID Venta</th>
+                        <th>Cliente</th>
+                        <th>Fecha</th>
+                        <th>Total</th>
+                        <th>Método de Pago</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venta in ventas %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'detalle_venta' venta.id %}" class="fw-bold text-primary">
+                                #{{ venta.id }}
+                            </a>
+                        </td>
+                        <td>{{ venta.cliente }}</td>
+                        <td>{{ venta.fecha|date:"d/m/Y H:i" }}</td>
+                        <td class="fw-bold text-success">${{ venta.total }}</td>
+                        <td>
+                            {% if venta.metodo_pago == 'efectivo' %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                    <i class="bi bi-cash"></i> Efectivo
+                                </span>
+                            {% else %}
+                                <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 px-2 py-1">
+                                    <i class="bi bi-bank"></i> Transferencia
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if venta.finalizada %}
+                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1">
+                                    <i class="bi bi-check-circle"></i> Finalizada
+                                </span>
+                            {% else %}
+                                <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25 px-2 py-1">
+                                    <i class="bi bi-clock-history"></i> Borrador
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted py-4">No hay ventas registradas.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

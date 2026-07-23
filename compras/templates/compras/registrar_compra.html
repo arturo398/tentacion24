@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Registrar Compra
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📥 Registrar Compra (Abastecimiento de Stock)</h2>
+        <a href="{% url 'listar_compras' %}" class="btn btn-outline-secondary">Volver al Listado</a>
+    </div>
+
+    <div class="row">
+        <!-- FORMULARIO DE INGRESO -->
+        <div class="col-lg-5">
+            <div class="card shadow mb-4">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Añadir Producto</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="proveedor" class="form-label fw-bold">Proveedor</label>
+                        <input type="text" id="proveedor" class="form-control" placeholder="Nombre del proveedor..." value="Proveedor General">
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label for="producto-select" class="form-label fw-bold">Producto</label>
+                        <select id="producto-select" class="form-select">
+                            <option value="">Seleccione un producto...</option>
+                            {% for producto in productos %}
+                            <option value="{{ producto.id }}" data-nombre="{{ producto.nombre }}" data-costo="{{ producto.precio_compra }}">
+                                {{ producto.nombre }} (Stock actual: {{ producto.stock }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cantidad" class="form-label fw-bold">Cantidad</label>
+                            <input type="number" id="cantidad" class="form-control" min="1" value="10">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="costo" class="form-label fw-bold">Costo Unitario ($)</label>
+                            <input type="number" id="costo" class="form-control" min="0" step="0.01" value="0.00">
+                        </div>
+                    </div>
+                    <button type="button" id="btn-agregar-item" class="btn btn-dark w-100">
+                        Añadir a la Compra
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LISTA DE LA COMPRA / CARRO -->
+        <div class="col-lg-7">
+            <div class="card shadow">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Productos en esta Compra</h5>
+                </div>
+                <div class="card-body">
+                    <div id="detalle-compra-list">
+                        <p class="text-muted text-center py-3">No hay productos añadidos a esta compra.</p>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Total Compra:</h4>
+                        <h2 id="total-compra">$0.00</h2>
+                    </div>
+                    <button type="button" id="btn-finalizar-compra" class="btn btn-danger w-100 btn-lg" disabled>
+                        Confirmar e Incrementar Stock
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    let items = [];
+    const prodSelect = document.getElementById("producto-select");
+    const cantInput = document.getElementById("cantidad");
+    const costoInput = document.getElementById("costo");
+    const btnAgregar = document.getElementById("btn-agregar-item");
+    const listDiv = document.getElementById("detalle-compra-list");
+    const totalHeader = document.getElementById("total-compra");
+    const btnFinalizar = document.getElementById("btn-finalizar-compra");
+    const proveedorInput = document.getElementById("proveedor");
+
+    // Cuando cambia el producto seleccionado, actualizar el costo sugerido
+    prodSelect.addEventListener("change", () => {
+        const selectedOption = prodSelect.options[prodSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const costoSugerido = parseFloat(selectedOption.dataset.costo || 0);
+            costoInput.value = costoSugerido.toFixed(2);
+        } else {
+            costoInput.value = "0.00";
+        }
+    });
+
+    btnAgregar.addEventListener("click", () => {
+        const prodId = prodSelect.value;
+        if (!prodId) {
+            alert("Por favor seleccione un producto.");
+            return;
+        }
+
+        const selectedOption = prodSelect.options[prodSelect.selectedIndex];
+        const prodNombre = selectedOption.dataset.nombre;
+        const cantidad = parseInt(cantInput.value);
+        const costoUnitario = parseFloat(costoInput.value);
+
+        if (isNaN(cantidad) || cantidad <= 0) {
+            alert("Ingrese una cantidad válida mayor a 0.");
+            return;
+        }
+        if (isNaN(costoUnitario) || costoUnitario < 0) {
+            alert("Ingrese un costo unitario válido.");
+            return;
+        }
+
+        // Verificar si ya existe en la lista para sumar cantidades
+        const existente = items.find(item => item.id === prodId);
+        if (existente) {
+            existente.cantidad += cantidad;
+            existente.costo_unitario = costoUnitario; // actualiza con el costo ingresado
+        } else {
+            items.push({
+                id: prodId,
+                nombre: prodNombre,
+                cantidad: cantidad,
+                costo_unitario: costoUnitario
+            });
+        }
+
+        actualizarTabla();
+    });
+
+    function actualizarTabla() {
+        if (items.length === 0) {
+            listDiv.innerHTML = '<p class="text-muted text-center py-3">No hay productos añadidos a esta compra.</p>';
+            totalHeader.textContent = "$0.00";
+            btnFinalizar.disabled = true;
+            return;
+        }
+
+        let total = 0;
+        let html = `
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cantidad</th>
+                    <th>Costo U.</th>
+                    <th>Subtotal</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+        items.forEach((item, index) => {
+            const subtotal = item.cantidad * item.costo_unitario;
+            total += subtotal;
+            html += `
+                <tr>
+                    <td>${item.nombre}</td>
+                    <td>${item.cantidad}</td>
+                    <td>$${item.costo_unitario.toFixed(2)}</td>
+                    <td>$${subtotal.toFixed(2)}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-danger btn-eliminar-item" data-index="${index}">
+                            Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `
+            </tbody>
+        </table>
+        `;
+        listDiv.innerHTML = html;
+        totalHeader.textContent = `$${total.toFixed(2)}`;
+        btnFinalizar.disabled = false;
+
+        // Botones de eliminación
+        document.querySelectorAll(".btn-eliminar-item").forEach(btn => {
+            btn.onclick = () => {
+                const idx = parseInt(btn.dataset.index);
+                items.splice(idx, 1);
+                actualizarTabla();
+            };
+        });
+    }
+
+    btnFinalizar.onclick = async () => {
+        const proveedor = proveedorInput.value.trim();
+        if (!proveedor) {
+            alert("Ingrese el nombre del proveedor.");
+            return;
+        }
+
+        btnFinalizar.disabled = true;
+        btnFinalizar.textContent = "Procesando...";
+
+        try {
+            const res = await fetch("{% url 'registrar_compra' %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    proveedor: proveedor,
+                    productos: items
+                })
+            });
+
+            const data = await res.json();
+            if (data.ok) {
+                alert("Compra registrada correctamente. El stock ha sido incrementado.");
+                window.location.href = "{% url 'listar_compras' %}";
+            } else {
+                alert("Error al registrar la compra: " + data.error);
+                btnFinalizar.disabled = false;
+                btnFinalizar.textContent = "Confirmar e Incrementar Stock";
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Ocurrió un error de red al intentar registrar la compra.");
+            btnFinalizar.disabled = false;
+            btnFinalizar.textContent = "Confirmar e Incrementar Stock";
+        }
+    };
+});
+</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Compras
+{% endblock %}
+
+{% block contenido %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Compras Registradas</h1>
+    <a href="{% url 'registrar_compra' %}" class="btn btn-primary">
+        Registrar Compra (Ingresar Stock)
+    </a>
+</div>
+
+<table class="table table-striped align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th>ID</th>
+            <th>Proveedor</th>
+            <th>Fecha</th>
+            <th>Detalles de Productos</th>
+            <th>Total Compra</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for compra in compras %}
+        <tr>
+            <td><strong>#{{ compra.id }}</strong></td>
+            <td>{{ compra.proveedor }}</td>
+            <td>{{ compra.fecha|date:"d/m/Y H:i" }}</td>
+            <td>
+                <ul class="list-unstyled mb-0">
+                    {% for detalle in compra.detalles.all %}
+                    <li>• {{ detalle.producto.nombre }} x {{ detalle.cantidad }} <span class="text-muted">(${{ detalle.costo_unitario }} c/u)</span></li>
+                    {% endfor %}
+                </ul>
+            </td>
+            <td class="fw-bold text-danger">${{ compra.total }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" class="text-center text-muted py-3">No hay compras registradas.</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+{% endblock %}

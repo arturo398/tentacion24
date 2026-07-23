@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Productos
+{% endblock %}
+
+{% block contenido %}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Productos</h1>
+</div>
+
+<form method="GET" class="mb-4">
+
+    <div class="input-group">
+
+        <input
+            type="text"
+            name="q"
+            class="form-control"
+            placeholder="Buscar producto..."
+            value="{{ busqueda }}"
+        >
+
+        <button class="btn btn-primary">
+            Buscar
+        </button>
+
+    </div>
+
+</form>
+
+<table class="table table-hover align-middle">
+
+    <thead class="table-dark">
+        <tr>
+            <th>Nombre</th>
+            <th>Categoría</th>
+            <th>Stock</th>
+            <th>Stock Mínimo</th>
+            <th>Precio Venta</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+    {% for producto in productos %}
+
+        <tr>
+
+            <td>{{ producto.nombre }}</td>
+
+            <td>{{ producto.categoria }}</td>
+
+            <td>{{ producto.stock }}</td>
+
+            <td>{{ producto.stock_minimo }}</td>
+
+            <td>${{ producto.precio_venta }}</td>
+
+            <td>
+
+                {% if producto.stock <= producto.stock_minimo %}
+
+                    <span class="badge bg-danger">
+                        Stock Bajo
+                    </span>
+
+                {% else %}
+
+                    <span class="badge bg-success">
+                        Disponible
+                    </span>
+
+                {% endif %}
+
+            </td>
+
+        </tr>
+
+    {% empty %}
+
+        <tr>
+            <td colspan="6" class="text-center">
+                No se encontraron productos
+            </td>
+        </tr>
+
+    {% endfor %}
+
+    </tbody>
+
+</table>
+
+{% endblock %}
