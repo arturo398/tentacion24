@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Presentaciones - {{ producto.nombre }}
+{% endblock %}
+
+{% block contenido %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow border-0 rounded-4 my-3">
+            <div class="card-header bg-primary text-white p-3 rounded-top-4 d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 fs-5"><i class="bi bi-tags-fill me-2"></i>Presentaciones: {{ producto.nombre }}</h4>
+                <a href="{% url 'productos' %}" class="btn btn-sm btn-outline-light rounded-pill">
+                    <i class="bi bi-arrow-left me-1"></i> Volver a Productos
+                </a>
+            </div>
+            <div class="card-body p-4">
+                
+                <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4">
+                    <i class="bi bi-info-circle-fill fs-3 me-3 text-info"></i>
+                    <div>
+                        <strong>Precio base individual:</strong> ${{ producto.precio_venta }} (1 unidad).<br>
+                        Agrega formatos de venta como <strong>Six-Pack</strong>, <strong>Pack x 24</strong> o <strong>Bultos</strong> con sus precios especiales.
+                    </div>
+                </div>
+
+                <!-- Formulario Agregar Presentación -->
+                <div class="card bg-secondary bg-opacity-10 border-0 p-3 mb-4 rounded-3">
+                    <h5 class="h6 fw-bold mb-3"><i class="bi bi-plus-circle-fill text-success me-1"></i> Agregar Nueva Presentación</h5>
+                    <form method="POST" class="row g-3 align-items-end">
+                        {% csrf_token %}
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold">Nombre de la Presentación</label>
+                            {{ form.nombre }}
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small fw-semibold">Unidades equivale</label>
+                            {{ form.unidades }}
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold">Precio Venta ($)</label>
+                            {{ form.precio_venta }}
+                        </div>
+                        <div class="col-12 text-end">
+                            <button type="submit" class="btn btn-success rounded-pill px-4">
+                                <i class="bi bi-check-lg me-1"></i> Agregar Presentación
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Lista de Presentaciones -->
+                <h5 class="fw-bold mb-3">Presentaciones Configurada</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Nombre Presentación</th>
+                                <th>Unidades que resta del Stock</th>
+                                <th>Precio de Venta</th>
+                                <th class="text-end pe-3">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Presentación Base -->
+                            <tr>
+                                <td class="fw-bold text-primary"><i class="bi bi-box-seam me-1"></i> Unidad Individual (Base)</td>
+                                <td><span class="badge bg-secondary">1 unidad</span></td>
+                                <td class="fw-bold text-success">${{ producto.precio_venta }}</td>
+                                <td class="text-end text-muted small pe-3">Predeterminada</td>
+                            </tr>
+                            {% for pres in presentaciones %}
+                            <tr>
+                                <td class="fw-bold">{{ pres.nombre }}</td>
+                                <td><span class="badge bg-info text-dark">{{ pres.unidades }} unidades</span></td>
+                                <td class="fw-bold text-success">${{ pres.precio_venta }}</td>
+                                <td class="text-end pe-3">
+                                    <form method="POST" action="{% url 'eliminar_presentacion' pres.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar esta presentación?');">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar">
+                                            <i class="bi bi-trash-fill"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

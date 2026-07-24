@@ -170,13 +170,17 @@ def eliminar_venta(request, venta_id):
 
 @login_required
 def pos(request):
-    productos = Producto.objects.all()
-    categorias = Producto.objects.values_list('categoria', flat=True).distinct()
+    from inventario.models import Combo
+    productos = Producto.objects.all().prefetch_related('presentaciones')
+    combos = Combo.objects.filter(activo=True).prefetch_related('elementos__producto')
+    categorias = list(Producto.objects.values_list('categoria', flat=True).distinct())
+
     return render(
         request,
         'ventas/pos.html',
         {
             'productos': productos,
+            'combos': combos,
             'categorias': categorias
         }
     )
@@ -185,25 +189,19 @@ def pos(request):
 @require_POST
 @login_required
 def finalizar_venta_api(request):
-
+    from inventario.models import Combo, PresentacionProducto
     try:
         datos = json.loads(request.body)
-        cliente = datos.get(
-            "cliente",
-            "Consumidor Final"
-        )
+        cliente = datos.get("cliente", "Consumidor Final")
         metodo_pago = datos.get("metodo_pago", "transferencia")
+        items = datos.get("productos", [])
 
-        productos  = datos.get(
-            "productos", 
-            []
-        )
+        if not items:
+            return JsonResponse({"ok": False, "error": "El carrito está vacío."}, status=400)
 
-        stock_actualizado = []
+        stock_actualizado = {}
 
         with transaction.atomic():
-
-            # Crea la venta como borrador primero para permitir agregar los detalles
             venta = Venta.objects.create(
                 cliente=cliente,
                 vendedor=request.user,
@@ -211,39 +209,63 @@ def finalizar_venta_api(request):
                 finalizada=False
             )
 
-            for item in productos:
+            for item in items:
+                es_combo = item.get("es_combo", False)
 
-                producto = Producto.objects.get(
-                    id=item["id"]
-                )
+                if es_combo:
+                    combo_id = item.get("id")
+                    combo = Combo.objects.get(id=combo_id)
+                    cant_combos = int(item.get("cantidad", 1))
+                    precio_combo = float(item.get("precio", combo.precio_venta))
 
-                DetalleVenta.objects.create(
-                    venta=venta,
-                    producto=producto,
-                    cantidad=item["cantidad"],
-                    precio_unitario=producto.precio_venta
-                )
+                    # Para cada componente del combo, registramos un detalle proporcional o se deduce el stock
+                    elementos = combo.elementos.all()
+                    for elem in elementos:
+                        cant_descuento = elem.cantidad * cant_combos
+                        # Calculamos costo/precio asignado
+                        precio_unitario_elem = (precio_combo / elementos.count()) / elem.cantidad if elem.cantidad > 0 else 0
+                        DetalleVenta.objects.create(
+                            venta=venta,
+                            producto=elem.producto,
+                            cantidad=cant_descuento,
+                            precio_unitario=precio_unitario_elem
+                        )
+                        elem.producto.refresh_from_db()
+                        stock_actualizado[elem.producto.id] = elem.producto.stock
+                else:
+                    prod_id = item.get("id")
+                    producto = Producto.objects.get(id=prod_id)
+                    cant_comprada = int(item.get("cantidad", 1))
+                    unidades_por_pack = int(item.get("unidades_pack", 1))
+                    precio_total_item = float(item.get("precio", producto.precio_venta))
 
-                producto.refresh_from_db()
+                    unidades_totales_descuento = cant_comprada * unidades_por_pack
+                    precio_unitario_lata = precio_total_item / unidades_por_pack if unidades_por_pack > 0 else float(producto.precio_venta)
 
-                stock_actualizado.append({
-                    "id": producto.id,
-                    "stock": producto.stock
-                })
+                    DetalleVenta.objects.create(
+                        venta=venta,
+                        producto=producto,
+                        cantidad=unidades_totales_descuento,
+                        precio_unitario=precio_unitario_lata
+                    )
 
-            # Finaliza la venta una vez cargados todos los productos
+                    producto.refresh_from_db()
+                    stock_actualizado[producto.id] = producto.stock
+
             venta.finalizada = True
             venta.save()
+
+            # Formatear lista de stock actualizado
+            lista_stock = [{"id": k, "stock": v} for k, v in stock_actualizado.items()]
 
         return JsonResponse({
             "ok": True,
             "venta": venta.id,
-            "stock_actualizado": stock_actualizado
+            "stock_actualizado": lista_stock
         })
-    
+
     except Exception as e:
-        
         return JsonResponse({
             "ok": False,
             "error": str(e)
-        }, status=400)
+        }, status=400)

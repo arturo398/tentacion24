@@ -193,3 +193,123 @@ body {
     transform: scale(1.1);
     color: var(--accent-blue);
 }
+
+/* ==========================================
+   MOBILE OPTIMIZATIONS (RESPONSIVE CELULAR)
+   ========================================== */
+@media (max-width: 767.98px) {
+    /* POS Grid & Product Cards */
+    #productos-grid .producto-col {
+        padding-left: 4px !important;
+        padding-right: 4px !important;
+    }
+
+    .producto-card .card-body,
+    .combo-card .card-body {
+        padding: 0.5rem 0.4rem !important;
+    }
+
+    .producto-card .card-title,
+    .combo-card .card-title {
+        font-size: 0.78rem !important;
+        line-height: 1.15;
+        max-height: 2.1rem;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        word-break: break-word;
+    }
+
+    .producto-card .rounded-circle,
+    .combo-card .rounded-circle {
+        padding: 0.3rem !important;
+        margin-bottom: 0.3rem !important;
+    }
+
+    .producto-card .rounded-circle i,
+    .combo-card .rounded-circle i {
+        font-size: 1.1rem !important;
+    }
+
+    .producto-card .badge,
+    .combo-card .badge {
+        font-size: 0.6rem !important;
+        padding: 2px 4px !important;
+        margin-bottom: 0.25rem !important;
+    }
+
+    .producto-card .texto-stock,
+    .combo-card .texto-stock {
+        font-size: 0.65rem !important;
+        margin-bottom: 0.25rem !important;
+    }
+
+    .producto-card select.select-presentacion {
+        font-size: 0.68rem !important;
+        padding: 1px 2px !important;
+        border-radius: 4px !important;
+    }
+
+    .producto-card h4,
+    .combo-card h4 {
+        font-size: 0.9rem !important;
+    }
+
+    .btn-add-prod,
+    .btn-add-combo {
+        font-size: 0.7rem !important;
+        padding: 3px 6px !important;
+        margin-top: 0.25rem !important;
+    }
+
+    /* POS Categories Filter */
+    .btn-categoria {
+        padding: 3px 8px !important;
+        font-size: 0.72rem !important;
+    }
+
+    /* Dashboard & Reportes Cards Mobile */
+    .dashboard-stat-card .card-body,
+    .reporte-stat-card .card-body {
+        padding: 0.45rem 0.5rem !important;
+    }
+
+    .dashboard-stat-card h6,
+    .reporte-stat-card h6 {
+        font-size: 0.62rem !important;
+        margin-bottom: 0.15rem !important;
+        letter-spacing: -0.2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dashboard-stat-card h2,
+    .reporte-stat-card h2 {
+        font-size: 0.9rem !important;
+        font-weight: 700 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dashboard-stat-card h1,
+    .reporte-stat-card h1 {
+        font-size: 1rem !important;
+        font-weight: 800 !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dashboard-stat-card .rounded-3,
+    .dashboard-stat-card .rounded-circle,
+    .reporte-stat-card .rounded-3,
+    .reporte-stat-card .rounded-circle {
+        display: none !important;
+    }
+}
+
+
+

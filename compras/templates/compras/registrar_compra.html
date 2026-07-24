@@ -14,9 +14,9 @@ Registrar Compra
     <div class="row">
         <!-- FORMULARIO DE INGRESO -->
         <div class="col-lg-5">
-            <div class="card shadow mb-4">
+            <div class="card shadow mb-4 border-0">
                 <div class="card-header bg-dark text-white">
-                    <h5 class="mb-0">Añadir Producto</h5>
+                    <h5 class="mb-0">Añadir Producto a la Compra</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
@@ -40,9 +40,23 @@ Registrar Compra
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="row">
+
+                    <!-- MODO DE COMPRA: UNIDADES O BULTOS/PACKS -->
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Modo de Ingreso</label>
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="modo-compra" id="modo-unidades" value="unidades" checked>
+                            <label class="btn btn-outline-primary" for="modo-unidades">Unidades Sueltas</label>
+                            
+                            <input type="radio" class="btn-check" name="modo-compra" id="modo-bultos" value="bultos">
+                            <label class="btn btn-outline-primary" for="modo-bultos">Bultos / Packs Cerrados</label>
+                        </div>
+                    </div>
+
+                    <!-- CAMPOS DINÁMICOS SEGÚN MODO DE COMPRA -->
+                    <div id="section-unidades" class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="cantidad" class="form-label fw-bold">Cantidad</label>
+                            <label for="cantidad" class="form-label fw-bold">Cantidad Unidades</label>
                             <input type="number" id="cantidad" class="form-control" min="1" value="10">
                         </div>
                         <div class="col-md-6 mb-3">
@@ -50,7 +64,28 @@ Registrar Compra
                             <input type="number" id="costo" class="form-control" min="0" step="0.01" value="0.00">
                         </div>
                     </div>
-                    <button type="button" id="btn-agregar-item" class="btn btn-dark w-100">
+
+                    <div id="section-bultos" class="row d-none">
+                        <div class="col-md-4 mb-3">
+                            <label for="bultos-cant" class="form-label fw-bold">Cantidad Bultos</label>
+                            <input type="number" id="bultos-cant" class="form-control" min="1" value="1">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="unidades-por-bulto" class="form-label fw-bold">Unid. x Bulto</label>
+                            <input type="number" id="unidades-por-bulto" class="form-control" min="1" value="24">
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label for="costo-bulto" class="form-label fw-bold">Costo Bulto ($)</label>
+                            <input type="number" id="costo-bulto" class="form-control" min="0" step="0.01" value="0.00">
+                        </div>
+                        <div class="col-12">
+                            <div class="alert alert-secondary py-2 small" id="resumen-calculo-bulto">
+                                Equivalente a: <strong>24 unidades</strong> a <strong>$0.00/u.</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="button" id="btn-agregar-item" class="btn btn-dark w-100 mt-2">
                         Añadir a la Compra
                     </button>
                 </div>
@@ -59,7 +94,7 @@ Registrar Compra
 
         <!-- LISTA DE LA COMPRA / CARRO -->
         <div class="col-lg-7">
-            <div class="card shadow">
+            <div class="card shadow border-0">
                 <div class="card-header bg-dark text-white">
                     <h5 class="mb-0">Productos en esta Compra</h5>
                 </div>
@@ -93,19 +128,19 @@ Registrar Compra
                 <form id="form-nuevo-producto">
                     <div class="mb-3">
                         <label for="np-nombre" class="form-label fw-bold">Nombre del Producto *</label>
-                        <input type="text" id="np-nombre" class="form-control" required placeholder="Ej. Alfajor Guaymallén">
+                        <input type="text" id="np-nombre" class="form-control" required placeholder="Ej. Cerveza Brahva 473ml">
                     </div>
                     <div class="mb-3">
                         <label for="np-categoria" class="form-label fw-bold">Categoría</label>
-                        <input type="text" id="np-categoria" class="form-control" placeholder="Ej. Golosinas, Bebidas..." value="General">
+                        <input type="text" id="np-categoria" class="form-control" placeholder="Ej. Cervezas, Destilados..." value="Bebidas">
                     </div>
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label for="np-costo" class="form-label fw-bold">Precio Compra / Costo ($)</label>
+                            <label for="np-costo" class="form-label fw-bold">Precio Compra / Costo U. ($)</label>
                             <input type="number" id="np-costo" class="form-control" min="0" step="0.01" value="0.00">
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label for="np-venta" class="form-label fw-bold">Precio Venta ($) *</label>
+                            <label for="np-venta" class="form-label fw-bold">Precio Venta U. ($) *</label>
                             <input type="number" id="np-venta" class="form-control" min="0" step="0.01" value="0.00" required>
                         </div>
                     </div>
@@ -134,6 +169,43 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalHeader = document.getElementById("total-compra");
     const btnFinalizar = document.getElementById("btn-finalizar-compra");
     const proveedorInput = document.getElementById("proveedor");
+
+    // Bultos / Packs
+    const modoUnidades = document.getElementById("modo-unidades");
+    const modoBultos = document.getElementById("modo-bultos");
+    const secUnidades = document.getElementById("section-unidades");
+    const secBultos = document.getElementById("section-bultos");
+    const bultosCant = document.getElementById("bultos-cant");
+    const unidadesPorBulto = document.getElementById("unidades-por-bulto");
+    const costoBulto = document.getElementById("costo-bulto");
+    const resumenBulto = document.getElementById("resumen-calculo-bulto");
+
+    function updateModoView() {
+        if (modoBultos.checked) {
+            secUnidades.classList.add("d-none");
+            secBultos.classList.remove("d-none");
+            calcResumenBulto();
+        } else {
+            secUnidades.classList.remove("d-none");
+            secBultos.classList.add("d-none");
+        }
+    }
+
+    modoUnidades.addEventListener("change", updateModoView);
+    modoBultos.addEventListener("change", updateModoView);
+
+    function calcResumenBulto() {
+        const b = parseInt(bultosCant.value) || 0;
+        const u = parseInt(unidadesPorBulto.value) || 1;
+        const cb = parseFloat(costoBulto.value) || 0;
+
+        const totalU = b * u;
+        const cu = totalU > 0 ? (b * cb) / totalU : 0;
+
+        resumenBulto.innerHTML = `Equivalente a: <strong>${totalU} unidades sueltas</strong> a <strong>$${cu.toFixed(2)} c/u</strong>`;
+    }
+
+    [bultosCant, unidadesPorBulto, costoBulto].forEach(el => el.addEventListener("input", calcResumenBulto));
 
     // Lógica para guardar nuevo producto vía Modal
     const btnGuardarModal = document.getElementById("btn-guardar-producto-modal");
@@ -170,7 +242,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const data = await res.json();
             if (data.ok) {
-                // Añadir opción al select de productos y seleccionarla
                 const option = document.createElement("option");
                 option.value = data.producto.id;
                 option.dataset.nombre = data.producto.nombre;
@@ -179,10 +250,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 option.selected = true;
                 prodSelect.appendChild(option);
 
-                // Actualizar costo sugerido
                 costoInput.value = data.producto.precio_compra.toFixed(2);
 
-                // Resetear form y cerrar modal
                 document.getElementById("form-nuevo-producto").reset();
                 const modalEl = document.getElementById("modalNuevoProducto");
                 const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
@@ -200,7 +269,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // Cuando cambia el producto seleccionado, actualizar el costo sugerido
     prodSelect.addEventListener("change", () => {
         const selectedOption = prodSelect.options[prodSelect.selectedIndex];
         if (selectedOption && selectedOption.value) {
@@ -220,29 +288,46 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const selectedOption = prodSelect.options[prodSelect.selectedIndex];
         const prodNombre = selectedOption.dataset.nombre;
-        const cantidad = parseInt(cantInput.value);
-        const costoUnitario = parseFloat(costoInput.value);
+        
+        let cantidadFinal = 0;
+        let costoUnitarioFinal = 0;
 
-        if (isNaN(cantidad) || cantidad <= 0) {
-            alert("Ingrese una cantidad válida mayor a 0.");
-            return;
+        if (modoBultos.checked) {
+            const b = parseInt(bultosCant.value) || 0;
+            const u = parseInt(unidadesPorBulto.value) || 0;
+            const cb = parseFloat(costoBulto.value) || 0;
+
+            if (b <= 0 || u <= 0) {
+                alert("Ingrese bultos y unidades válidas mayor a 0.");
+                return;
+            }
+            cantidadFinal = b * u;
+            costoUnitarioFinal = (b * cb) / cantidadFinal;
+        } else {
+            cantidadFinal = parseInt(cantInput.value) || 0;
+            costoUnitarioFinal = parseFloat(costoInput.value) || 0;
+
+            if (cantidadFinal <= 0) {
+                alert("Ingrese una cantidad válida mayor a 0.");
+                return;
+            }
         }
-        if (isNaN(costoUnitario) || costoUnitario < 0) {
+
+        if (costoUnitarioFinal < 0) {
             alert("Ingrese un costo unitario válido.");
             return;
         }
 
-        // Verificar si ya existe en la lista para sumar cantidades
         const existente = items.find(item => item.id === prodId);
         if (existente) {
-            existente.cantidad += cantidad;
-            existente.costo_unitario = costoUnitario; // actualiza con el costo ingresado
+            existente.cantidad += cantidadFinal;
+            existente.costo_unitario = costoUnitarioFinal;
         } else {
             items.push({
                 id: prodId,
                 nombre: prodNombre,
-                cantidad: cantidad,
-                costo_unitario: costoUnitario
+                cantidad: cantidadFinal,
+                costo_unitario: costoUnitarioFinal
             });
         }
 
@@ -259,11 +344,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let total = 0;
         let html = `
-        <table class="table table-hover">
+        <table class="table table-hover align-middle">
             <thead>
                 <tr>
                     <th>Producto</th>
-                    <th>Cantidad</th>
+                    <th>Cant. Total Unidades</th>
                     <th>Costo U.</th>
                     <th>Subtotal</th>
                     <th>Acciones</th>
@@ -277,13 +362,13 @@ document.addEventListener("DOMContentLoaded", () => {
             total += subtotal;
             html += `
                 <tr>
-                    <td>${item.nombre}</td>
-                    <td>${item.cantidad}</td>
+                    <td class="fw-bold">${item.nombre}</td>
+                    <td><span class="badge bg-primary fs-6">${item.cantidad} u.</span></td>
                     <td>$${item.costo_unitario.toFixed(2)}</td>
-                    <td>$${subtotal.toFixed(2)}</td>
+                    <td class="fw-bold text-success">$${subtotal.toFixed(2)}</td>
                     <td>
-                        <button type="button" class="btn btn-sm btn-danger btn-eliminar-item" data-index="${index}">
-                            Eliminar
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-item" data-index="${index}">
+                            <i class="bi bi-trash"></i> Eliminar
                         </button>
                     </td>
                 </tr>
@@ -298,7 +383,6 @@ document.addEventListener("DOMContentLoaded", () => {
         totalHeader.textContent = `$${total.toFixed(2)}`;
         btnFinalizar.disabled = false;
 
-        // Botones de eliminación
         document.querySelectorAll(".btn-eliminar-item").forEach(btn => {
             btn.onclick = () => {
                 const idx = parseInt(btn.dataset.index);

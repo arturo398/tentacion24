@@ -1,17 +1,11 @@
-//Carrito de venta
+// Carrito de venta
 let carrito = [];
 
-//Tarjetas de productos
-const tarjetas = document.querySelectorAll(".producto-card");
-
-//Contenedores
+// Elementos DOM
 const carritoDiv = document.getElementById("carrito");
 const totalDiv = document.getElementById("total");
 const mensajeDiv = document.getElementById("mensaje-pos");
 const botonFinalizar = document.getElementById("btn-finalizar");
-console.log("Botón encontrado:", botonFinalizar);
-
-// Elementos de búsqueda y categorías
 const searchInput = document.getElementById("pos-search");
 const clienteNombreInput = document.getElementById("cliente-nombre");
 const categoriaBotones = document.querySelectorAll(".btn-categoria");
@@ -20,6 +14,7 @@ const productoCols = document.querySelectorAll(".producto-col");
 let categoriaSeleccionada = "todos";
 let textoBusqueda = "";
 
+// Filtrado de productos y combos
 function filtrarProductos() {
     productoCols.forEach(col => {
         const cat = col.dataset.categoria;
@@ -46,60 +41,113 @@ if (searchInput) {
 categoriaBotones.forEach(boton => {
     boton.addEventListener("click", () => {
         categoriaBotones.forEach(b => {
-            b.classList.remove("btn-dark");
+            b.classList.remove("btn-dark", "btn-warning");
             b.classList.add("btn-outline-dark");
         });
         boton.classList.remove("btn-outline-dark");
-        boton.classList.add("btn-dark");
+        if (boton.dataset.categoria === "combos") {
+            boton.classList.add("btn-warning");
+        } else {
+            boton.classList.add("btn-dark");
+        }
         
         categoriaSeleccionada = boton.dataset.categoria;
         filtrarProductos();
     });
 });
 
-//Eventos de las tarjetas
-tarjetas.forEach((tarjeta) => {
-    tarjeta.addEventListener("click", () => {
-        agregarProducto(
-            tarjeta.dataset.id,
-            tarjeta.dataset.nombre,
-            parseFloat(tarjeta.dataset.precio),
-            parseInt(tarjeta.dataset.stock)
-        );
+// Eventos tarjetas de productos
+document.querySelectorAll(".producto-card").forEach(tarjeta => {
+    const btnAdd = tarjeta.querySelector(".btn-add-prod");
+
+    const handleAdd = (e) => {
+        if (e) e.stopPropagation();
+
+        const id = tarjeta.dataset.id;
+        const nombreBase = tarjeta.dataset.nombre;
+        const stockBase = parseInt(tarjeta.dataset.stock) || 0;
+
+        const selectPres = tarjeta.querySelector(".select-presentacion");
+        let presNombre = "";
+        let unidadesPack = 1;
+        let precioItem = parseFloat(tarjeta.dataset.precio);
+
+        if (selectPres) {
+            const opt = selectPres.options[selectPres.selectedIndex];
+            unidadesPack = parseInt(opt.dataset.unidades) || 1;
+            precioItem = parseFloat(opt.dataset.precio);
+            const presLabel = opt.dataset.nombre;
+            presNombre = presLabel !== "Unidad suelta" ? ` [${presLabel}]` : "";
+        }
+
+        agregarAlCarrito({
+            id: id,
+            nombreKey: `${id}_pres_${unidadesPack}`,
+            nombre: `${nombreBase}${presNombre}`,
+            precio: precioItem,
+            unidadesPack: unidadesPack,
+            stockBase: stockBase,
+            esCombo: false
+        });
+    };
+
+    if (btnAdd) btnAdd.addEventListener("click", handleAdd);
+    tarjeta.addEventListener("click", (e) => {
+        if (!e.target.closest("select")) {
+            handleAdd(e);
+        }
     });
 });
 
-function agregarProducto(id, nombre, precio, stock) {
-    const existente = carrito.find(
-        producto => producto.id == id
-    );
+// Eventos tarjetas de combos
+document.querySelectorAll(".combo-card").forEach(tarjeta => {
+    const handleAddCombo = (e) => {
+        if (e) e.stopPropagation();
 
-    const cantidadActual = existente ? existente.cantidad : 0;
+        const id = tarjeta.dataset.id;
+        const nombre = tarjeta.dataset.nombre;
+        const precio = parseFloat(tarjeta.dataset.precio);
+        const stockCombo = parseInt(tarjeta.dataset.stock) || 0;
 
-    if(cantidadActual >= stock){
-        alert("No hay suficiente stock disponible.");
+        agregarAlCarrito({
+            id: id,
+            nombreKey: `combo_${id}`,
+            nombre: `🍹 Promo: ${nombre}`,
+            precio: precio,
+            unidadesPack: 1,
+            stockBase: stockCombo,
+            esCombo: true
+        });
+    };
+
+    tarjeta.addEventListener("click", handleAddCombo);
+});
+
+function agregarAlCarrito(itemData) {
+    const existente = carrito.find(p => p.nombreKey === itemData.nombreKey);
+    const cantidadDeseadaAct = existente ? existente.cantidad + 1 : 1;
+    const unidadesDeseadasTotales = cantidadDeseadaAct * itemData.unidadesPack;
+
+    if (unidadesDeseadasTotales > itemData.stockBase) {
+        alert("No hay suficiente stock disponible para agregar esta cantidad.");
         return;
     }
 
-    // Aplicar animación a la tarjeta del producto
-    const tarjeta = document.querySelector(`.producto-card[data-id="${id}"]`);
-    if (tarjeta) {
-        tarjeta.classList.add("pulse-animation");
-        setTimeout(() => {
-            tarjeta.classList.remove("pulse-animation");
-        }, 300);
-    }
-
-    if(existente){
+    if (existente) {
         existente.cantidad++;
-    }else{
+    } else {
         carrito.push({
-            id:id,
-            nombre:nombre,
-            precio:precio,
-            cantidad:1
+            id: itemData.id,
+            nombreKey: itemData.nombreKey,
+            nombre: itemData.nombre,
+            precio: itemData.precio,
+            unidadesPack: itemData.unidadesPack,
+            stockBase: itemData.stockBase,
+            esCombo: itemData.esCombo,
+            cantidad: 1
         });
     }
+
     actualizarCarrito();
 }
 
@@ -122,11 +170,11 @@ function actualizarCarrito() {
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
                     <div class="d-flex align-items-center gap-1">
-                        <button class="btn btn-sm btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center disminuir" data-id="${producto.id}" style="width: 26px; height: 26px;">
+                        <button class="btn btn-sm btn-outline-danger rounded-circle p-0 d-flex align-items-center justify-content-center disminuir" data-key="${producto.nombreKey}" style="width: 26px; height: 26px;">
                             <i class="bi bi-dash"></i>
                         </button>
                         <span class="fw-bold px-2 small">${producto.cantidad}</span>
-                        <button class="btn btn-sm btn-outline-success rounded-circle p-0 d-flex align-items-center justify-content-center aumentar" data-id="${producto.id}" style="width: 26px; height: 26px;">
+                        <button class="btn btn-sm btn-outline-success rounded-circle p-0 d-flex align-items-center justify-content-center aumentar" data-key="${producto.nombreKey}" style="width: 26px; height: 26px;">
                             <i class="bi bi-plus"></i>
                         </button>
                     </div>
@@ -137,13 +185,12 @@ function actualizarCarrito() {
         `;
     });
 
-    // Actualizar insignia de ítems
     const cartCountBadge = document.getElementById("cart-count");
     if (cartCountBadge) {
         cartCountBadge.textContent = `${totalItems} ${totalItems === 1 ? 'ítem' : 'ítems'}`;
     }
 
-    if(carrito.length == 0){
+    if (carrito.length === 0) {
         carritoDiv.innerHTML = `
         <div class="text-center py-5 text-muted">
             <i class="bi bi-cart-x fs-1 d-block mb-2"></i>
@@ -152,50 +199,37 @@ function actualizarCarrito() {
         `;
     }
 
-    totalDiv.innerHTML = "$"+total.toFixed(2);
+    totalDiv.innerHTML = "$" + total.toFixed(2);
 
     document.querySelectorAll(".aumentar").forEach(boton => {
-        boton.onclick = () => {
-            aumentarCantidad(
-                boton.dataset.id
-            );
-        };
+        boton.onclick = () => aumentarCantidad(boton.dataset.key);
     });
 
     document.querySelectorAll(".disminuir").forEach(boton => {
-        boton.onclick = () => {
-            disminuirCantidad(
-                boton.dataset.id
-            );
-        };
+        boton.onclick = () => disminuirCantidad(boton.dataset.key);
     });
 }
 
-function aumentarCantidad(id){
-    const producto = carrito.find(p => p.id == id);
-    if(!producto) return;
+function aumentarCantidad(nombreKey) {
+    const producto = carrito.find(p => p.nombreKey === nombreKey);
+    if (!producto) return;
 
-    const tarjeta = document.querySelector(`[data-id="${id}"]`);
-    const stock = tarjeta ? parseInt(tarjeta.dataset.stock) : 0;
-
-    if (producto.cantidad >= stock) {
+    if ((producto.cantidad + 1) * producto.unidadesPack > producto.stockBase) {
         alert("No hay suficiente stock disponible.");
         return;
     }
 
     producto.cantidad++;
-    if(producto.cantidad <=0){
-        carrito = carrito.filter(p => p.id != id);
-    }
     actualizarCarrito();
 }
 
-function disminuirCantidad(id){
-    const producto = carrito.find(p => p.id == id);
-    if(!producto) return;
+function disminuirCantidad(nombreKey) {
+    const producto = carrito.find(p => p.nombreKey === nombreKey);
+    if (!producto) return;
+
     producto.cantidad--;
-    if(producto.cantidad <=0){
-        carrito = carrito.filter(p => p.id != id);
+    if (producto.cantidad <= 0) {
+        carrito = carrito.filter(p => p.nombreKey !== nombreKey);
     }
     actualizarCarrito();
 }
@@ -209,87 +243,87 @@ function mostrarMensaje(texto, tipo = "warning") {
     `;
     setTimeout(() => {
         mensajeDiv.innerHTML = "";
-    }, 3000);    
+    }, 4000);
 }
 
 async function finalizarVenta() {
-    console.log("Enviando venta...");
+    if (carrito.length === 0) {
+        alert("El carrito está vacío.");
+        return;
+    }
 
-    const productos = carrito.map(producto => ({
-        id: producto.id,
-        cantidad: producto.cantidad
+    const payloadProductos = carrito.map(item => ({
+        id: item.id,
+        cantidad: item.cantidad,
+        unidades_pack: item.unidadesPack,
+        precio: item.precio,
+        es_combo: item.esCombo
     }));
 
     const clienteNombre = clienteNombreInput ? clienteNombreInput.value.trim() : "Consumidor Final";
     const checkedRadio = document.querySelector('input[name="metodo-pago"]:checked');
     const metodoPago = checkedRadio ? checkedRadio.value : "transferencia";
 
+    botonFinalizar.disabled = true;
+    botonFinalizar.textContent = "Procesando...";
+
     try {
-        const respuesta = await fetch(
-            "/ventas/api/finalizar/",
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({
-                    cliente: clienteNombre || "Consumidor Final",
-                    metodo_pago: metodoPago,
-                    productos: productos
-                })
-            }
-        );
+        const respuesta = await fetch("/ventas/api/finalizar/", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                cliente: clienteNombre || "Consumidor Final",
+                metodo_pago: metodoPago,
+                productos: payloadProductos
+            })
+        });
 
         const datos = await respuesta.json();
-        console.log("Respuesta de Django:", datos);
 
-        if(datos.ok){
+        if (datos.ok) {
             actualizarStockTarjetas(datos.stock_actualizado);
             carrito = [];
             actualizarCarrito();
-            mostrarMensaje(` Venta #${datos.venta} registrada correctamente`,
-                "success"
-            );
+            mostrarMensaje(`🎉 Venta #${datos.venta} registrada correctamente. ¡Stock actualizado!`, "success");
+        } else {
+            alert("Error al procesar la venta: " + datos.error);
         }
     } catch (error) {
         console.error("Error:", error);
+        alert("Ocurrió un error de red al intentar finalizar la venta.");
+    } finally {
+        botonFinalizar.disabled = false;
+        botonFinalizar.innerHTML = `<i class="bi bi-check-lg"></i> Finalizar Venta`;
     }
 }
 
-console.log("Asignando evento al botón");
 botonFinalizar.onclick = finalizarVenta;
 
 function actualizarStockTarjetas(stockActualizado) {
     if (!stockActualizado) return;
     stockActualizado.forEach(item => {
-        const tarjeta = document.querySelector(
-             `[data-id="${item.id}"]`
-        );
+        const tarjeta = document.querySelector(`.producto-card[data-id="${item.id}"]`);
+        if (!tarjeta) return;
 
-        if(!tarjeta) return;
         tarjeta.dataset.stock = item.stock;
-
         const textoStock = tarjeta.querySelector(".texto-stock");
 
         if (textoStock) {
             if (item.stock === 0) {
-                textoStock.innerHTML = "🔴 SIN STOCK";
-                textoStock.className = "texto-stock text-danger fw-bold";
-                tarjeta.style.opacity = "0.45";
-            }
-            else if (item.stock <= 5) {
-                textoStock.innerHTML = `🟡 Stock: ${item.stock}`;
-                textoStock.className = "texto-stock text-warning fw-bold";
-                tarjeta.style.opacity = "1";
-            }
-            else {
-                textoStock.innerHTML = `🟢 Stock: ${item.stock}`;
-                textoStock.className = "texto-stock text-success fw-bold";
-                tarjeta.style.opacity = "1";
+                textoStock.innerHTML = `<i class="bi bi-x-circle-fill"></i> SIN STOCK`;
+                textoStock.className = "texto-stock text-danger fw-bold mb-2 small";
+                tarjeta.classList.add("opacity-50");
+            } else if (item.stock <= 5) {
+                textoStock.innerHTML = `<i class="bi bi-exclamation-triangle-fill"></i> STOCK BAJO: ${item.stock} u.`;
+                textoStock.className = "texto-stock text-warning fw-bold mb-2 small";
+                tarjeta.classList.remove("opacity-50");
+            } else {
+                textoStock.innerHTML = `<i class="bi bi-check-circle-fill"></i> STOCK: ${item.stock} u.`;
+                textoStock.className = "texto-stock text-success fw-bold mb-2 small";
+                tarjeta.classList.remove("opacity-50");
             }
         }
     });
 }
-
-
-

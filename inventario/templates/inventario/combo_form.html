@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+{{ titulo }}
+{% endblock %}
+
+{% block contenido %}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card shadow border-0 rounded-4 my-3">
+            <div class="card-header bg-warning text-dark p-3 rounded-top-4 d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 fs-5 fw-bold"><i class="bi bi-gift-fill me-2"></i>{{ titulo }}</h4>
+                <a href="{% url 'combos' %}" class="btn btn-sm btn-outline-dark rounded-pill">
+                    <i class="bi bi-arrow-left me-1"></i> Volver a Combos
+                </a>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" id="combo-form" novalidate>
+                    {% csrf_token %}
+
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label fw-semibold">Nombre del Combo / Promo <span class="text-danger">*</span></label>
+                            {{ form.nombre }}
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label fw-semibold">Precio del Combo ($) <span class="text-danger">*</span></label>
+                            {{ form.precio_venta }}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Descripción</label>
+                        {{ form.descripcion }}
+                    </div>
+
+                    <div class="form-check mb-4">
+                        {{ form.activo }}
+                        <label class="form-check-label fw-semibold" for="{{ form.activo.id_for_label }}">
+                            Combo Activo para la Venta
+                        </label>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- SECCIÓN DE PRODUCTOS QUE INTEGRAN EL COMBO -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-box-seam text-primary me-2"></i>Productos incluidos en el Combo</h5>
+                        <button type="button" id="btn-add-item" class="btn btn-sm btn-outline-success rounded-pill px-3">
+                            <i class="bi bi-plus-circle me-1"></i> Agregar Producto
+                        </button>
+                    </div>
+
+                    <div id="elementos-container" class="mb-4">
+                        {% if elementos %}
+                            {% for elem in elementos %}
+                            <div class="row g-2 mb-2 elemento-row align-items-center">
+                                <div class="col-md-7">
+                                    <select name="producto_id[]" class="form-select" required>
+                                        <option value="">-- Seleccionar Producto --</option>
+                                        {% for prod in productos %}
+                                        <option value="{{ prod.id }}" {% if prod.id == elem.producto.id %}selected{% endif %}>
+                                            {{ prod.nombre }} (Stock: {{ prod.stock }})
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" name="cantidad[]" class="form-control" value="{{ elem.cantidad }}" min="1" placeholder="Cantidad" required>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <button type="button" class="btn btn-outline-danger btn-remove-item w-100">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="row g-2 mb-2 elemento-row align-items-center">
+                                <div class="col-md-7">
+                                    <select name="producto_id[]" class="form-select" required>
+                                        <option value="">-- Seleccionar Producto --</option>
+                                        {% for prod in productos %}
+                                        <option value="{{ prod.id }}">{{ prod.nombre }} (Stock: {{ prod.stock }})</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" name="cantidad[]" class="form-control" value="1" min="1" placeholder="Cantidad" required>
+                                </div>
+                                <div class="col-md-2 text-end">
+                                    <button type="button" class="btn btn-outline-danger btn-remove-item w-100">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'combos' %}" class="btn btn-secondary rounded-pill px-4">Cancelar</a>
+                        <button type="submit" class="btn btn-warning text-dark fw-bold rounded-pill px-4">
+                            <i class="bi bi-check-circle me-1"></i> Guardar Combo
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const container = document.getElementById('elementos-container');
+    const btnAdd = document.getElementById('btn-add-item');
+
+    btnAdd.addEventListener('click', () => {
+        const firstRow = container.querySelector('.elemento-row');
+        if (firstRow) {
+            const newRow = firstRow.cloneNode(true);
+            newRow.querySelector('select').value = '';
+            newRow.querySelector('input[type="number"]').value = '1';
+            container.appendChild(newRow);
+            attachRemoveEvent(newRow.querySelector('.btn-remove-item'));
+        }
+    });
+
+    function attachRemoveEvent(btn) {
+        btn.addEventListener('click', (e) => {
+            const rows = container.querySelectorAll('.elemento-row');
+            if (rows.length > 1) {
+                btn.closest('.elemento-row').remove();
+            } else {
+                alert('El combo debe tener al menos un producto.');
+            }
+        });
+    }
+
+    container.querySelectorAll('.btn-remove-item').forEach(btn => attachRemoveEvent(btn));
+});
+</script>
+
+{% endblock %}

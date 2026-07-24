@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Combos y Promociones
+{% endblock %}
+
+{% block contenido %}
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+    <h1 class="h2 mb-0"><i class="bi bi-gift-fill text-warning me-2"></i>Combos y Promociones</h1>
+    <a href="{% url 'crear_combo' %}" class="btn btn-warning text-dark rounded-pill px-3 shadow-sm fw-bold">
+        <i class="bi bi-plus-circle me-1"></i> Nuevo Combo / Promo
+    </a>
+</div>
+
+<div class="row">
+    {% for combo in combos %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 border-0 shadow-sm rounded-4">
+            <div class="card-header bg-dark text-white p-3 rounded-top-4 d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 fw-bold fs-6 text-truncate" style="max-width: 200px;">{{ combo.nombre }}</h5>
+                <span class="fs-5 fw-extrabold text-warning">${{ combo.precio_venta }}</span>
+            </div>
+            <div class="card-body p-3 d-flex flex-column">
+                {% if combo.descripcion %}
+                    <p class="text-muted small mb-3">{{ combo.descripcion }}</p>
+                {% endif %}
+
+                <h6 class="fw-bold small text-secondary text-uppercase mb-2"><i class="bi bi-box-seam me-1"></i> Incluye:</h6>
+                <ul class="list-group list-group-flush mb-3 rounded-3">
+                    {% for elem in combo.elementos.all %}
+                    <li class="list-group-bg border-0 d-flex justify-content-between align-items-center py-1 px-2 small">
+                        <span><i class="bi bi-check2 text-success me-1"></i> {{ elem.producto.nombre }}</span>
+                        <span class="badge bg-secondary rounded-pill">x{{ elem.cantidad }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+
+                <div class="mt-auto d-flex justify-content-between align-items-center pt-2 border-top">
+                    <div>
+                        {% with stock_combos=combo.stock_disponible %}
+                        {% if stock_combos > 0 %}
+                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i> {{ stock_combos }} combos disponibles</span>
+                        {% else %}
+                            <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i> Sin Stock de Insumos</span>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                    <div class="btn-group btn-group-sm">
+                        <a href="{% url 'editar_combo' combo.pk %}" class="btn btn-outline-primary" title="Editar">
+                            <i class="bi bi-pencil-fill"></i>
+                        </a>
+                        <form method="POST" action="{% url 'eliminar_combo' combo.pk %}" class="d-inline" onsubmit="return confirm('¿Eliminar este combo?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger" title="Eliminar">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-warning text-center border-0 shadow-sm p-4">
+            <i class="bi bi-gift fs-1 d-block mb-2 text-warning"></i>
+            No hay combos o promociones cargadas. ¡Crea el primero como <strong>1 Fernet + 2 Cocas</strong>!
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% endblock %}
