@@ -39,13 +39,28 @@
 
         <div class="collapse navbar-collapse" id="navbarNav">
             <div class="navbar-nav ms-3">
+                {% if es_admin or es_auditor or not es_vendedor %}
                 <a class="nav-link" href="/"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
+                {% endif %}
+
                 <a class="nav-link" href="/productos/"><i class="bi bi-box-seam me-1"></i> Productos</a>
+
+                {% if es_admin %}
                 <a class="nav-link" href="{% url 'combos' %}"><i class="bi bi-gift me-1"></i> Combos</a>
+                {% endif %}
+
+                {% if es_admin or es_vendedor %}
                 <a class="nav-link" href="/ventas/pos/"><i class="bi bi-cart3 me-1"></i> POS</a>
                 <a class="nav-link" href="/ventas/"><i class="bi bi-receipt me-1"></i> Ventas</a>
+                {% endif %}
+
+                {% if es_admin %}
                 <a class="nav-link" href="{% url 'listar_compras' %}"><i class="bi bi-download me-1"></i> Compras</a>
+                {% endif %}
+
+                {% if es_admin or es_auditor %}
                 <a class="nav-link" href="/reportes/"><i class="bi bi-graph-up me-1"></i> Reportes</a>
+                {% endif %}
             </div>
             
             <div class="ms-auto d-flex align-items-center">

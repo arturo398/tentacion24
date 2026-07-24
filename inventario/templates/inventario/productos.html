@@ -8,9 +8,11 @@ Productos
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h1 class="h2 mb-0"><i class="bi bi-box-seam text-primary me-2"></i>Productos</h1>
+    {% if es_admin %}
     <a href="{% url 'crear_producto' %}" class="btn btn-success rounded-pill px-3 shadow-sm">
         <i class="bi bi-plus-circle me-1"></i> Nuevo Producto
     </a>
+    {% endif %}
 </div>
 
 <form method="GET" class="mb-4">
@@ -41,12 +43,12 @@ Productos
                     <tr>
                         <th>Nombre</th>
                         <th>Categoría</th>
-                        <th>Precio Compra</th>
+                        {% if es_admin or es_auditor %}<th>Precio Compra</th>{% endif %}
                         <th>Precio Venta</th>
                         <th>Stock</th>
                         <th>Stock Mínimo</th>
                         <th>Estado</th>
-                        <th class="text-end pe-4">Acciones</th>
+                        {% if es_admin %}<th class="text-end pe-4">Acciones</th>{% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -54,7 +56,7 @@ Productos
                     <tr>
                         <td class="fw-semibold">{{ producto.nombre }}</td>
                         <td><span class="badge bg-secondary opacity-75">{{ producto.categoria }}</span></td>
-                        <td>${{ producto.precio_compra }}</td>
+                        {% if es_admin or es_auditor %}<td>${{ producto.precio_compra }}</td>{% endif %}
                         <td class="fw-bold text-success">${{ producto.precio_venta }}</td>
                         <td>{{ producto.stock }}</td>
                         <td>{{ producto.stock_minimo }}</td>
@@ -69,6 +71,7 @@ Productos
                                 </span>
                             {% endif %}
                         </td>
+                        {% if es_admin %}
                         <td class="text-end pe-3">
                             <div class="btn-group btn-group-sm" role="group">
                                 <a href="{% url 'gestionar_presentaciones' producto.pk %}" class="btn btn-outline-info" title="Formatos / Packs / Presentaciones">
@@ -81,6 +84,8 @@ Productos
                                     <i class="bi bi-trash-fill"></i>
                                 </button>
                             </div>
+                        </td>
+                        {% endif %}
 
 
                             <!-- Modal de Confirmación de Eliminación -->

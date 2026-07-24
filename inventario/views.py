@@ -41,6 +41,9 @@ def listar_productos(request):
 
 @login_required
 def crear_producto(request):
+    if not request.user.is_superuser:
+        messages.error(request, "Se requieren permisos de administrador para crear productos.")
+        return redirect('productos')
     if request.method == 'POST':
         form = ProductoForm(request.POST)
         if form.is_valid():
@@ -58,6 +61,9 @@ def crear_producto(request):
 
 @login_required
 def editar_producto(request, pk):
+    if not request.user.is_superuser:
+        messages.error(request, "Se requieren permisos de administrador para editar productos.")
+        return redirect('productos')
     producto = get_object_or_404(Producto, pk=pk)
     if request.method == 'POST':
         form = ProductoForm(request.POST, instance=producto)
@@ -77,6 +83,9 @@ def editar_producto(request, pk):
 
 @login_required
 def eliminar_producto(request, pk):
+    if not request.user.is_superuser:
+        messages.error(request, "Se requieren permisos de administrador para eliminar productos.")
+        return redirect('productos')
     producto = get_object_or_404(Producto, pk=pk)
     if request.method == 'POST':
         nombre = producto.nombre
@@ -88,7 +97,10 @@ def eliminar_producto(request, pk):
 # --- PRESENTACIONES DE PRODUCTOS ---
 @login_required
 def gestionar_presentaciones(request, producto_id):
-    producto = get_object_or_404(Producto, pk=producto_id)
+    if not request.user.is_superuser:
+        messages.error(request, "Se requieren permisos de administrador para gestionar packs/presentaciones.")
+        return redirect('productos')
+    producto = get_object_or_404(Producto, pk=pk if 'pk' in locals() else producto_id)
     presentaciones = producto.presentaciones.all()
 
     if request.method == 'POST':
@@ -107,6 +119,7 @@ def gestionar_presentaciones(request, producto_id):
         'presentaciones': presentaciones,
         'form': form
     })
+
 
 
 @login_required
