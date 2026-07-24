@@ -1,7 +1,9 @@
 from django.contrib.auth import logout
-from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from .models import Producto
+from .forms import ProductoForm
 from compras.models import Compra
 from ventas.models import Venta
 from django.db.models import Q, F
@@ -15,10 +17,10 @@ def logout_view(request):
     return redirect('login')
 
 
+@login_required
 def listar_productos(request):
-
     busqueda = request.GET.get('q', '')
-    productos = Producto.objects.all()
+    productos = Producto.objects.all().order_by('nombre')
 
     if busqueda:
         productos = productos.filter(
@@ -30,10 +32,57 @@ def listar_productos(request):
         request,
         'inventario/productos.html',
         {
-            'productos': productos ,
-            'busqueda' : busqueda
+            'productos': productos,
+            'busqueda': busqueda
         }
     )
+
+
+@login_required
+def crear_producto(request):
+    if request.method == 'POST':
+        form = ProductoForm(request.POST)
+        if form.is_valid():
+            producto = form.save()
+            messages.success(request, f'Producto "{producto.nombre}" creado exitosamente.')
+            return redirect('productos')
+    else:
+        form = ProductoForm()
+
+    return render(request, 'inventario/producto_form.html', {
+        'form': form,
+        'titulo': 'Nuevo Producto'
+    })
+
+
+@login_required
+def editar_producto(request, pk):
+    producto = get_object_or_404(Producto, pk=pk)
+    if request.method == 'POST':
+        form = ProductoForm(request.POST, instance=producto)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Producto "{producto.nombre}" actualizado correctamente.')
+            return redirect('productos')
+    else:
+        form = ProductoForm(instance=producto)
+
+    return render(request, 'inventario/producto_form.html', {
+        'form': form,
+        'titulo': f'Editar Producto: {producto.nombre}',
+        'producto': producto
+    })
+
+
+@login_required
+def eliminar_producto(request, pk):
+    producto = get_object_or_404(Producto, pk=pk)
+    if request.method == 'POST':
+        nombre = producto.nombre
+        producto.delete()
+        messages.success(request, f'Producto "{nombre}" eliminado correctamente.')
+    return redirect('productos')
+
 
 def dashboard(request):
 
