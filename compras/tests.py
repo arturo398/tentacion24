@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.test import TestCase
 from inventario.models import Producto
 from compras.models import Compra, DetalleCompra
@@ -60,3 +61,27 @@ class PurchaseStockControlTest(TestCase):
         detalle.save()
         self.producto.refresh_from_db()
         self.assertEqual(self.producto.stock, 12)
+
+    def test_compra_total_includes_valor_envio(self):
+        compra_envio = Compra.objects.create(proveedor="Proveedor Envío", valor_envio=50.00)
+        DetalleCompra.objects.create(
+            compra=compra_envio,
+            producto=self.producto,
+            cantidad=2,
+            costo_unitario=5.00
+        )
+        # Subtotal: 2 * 5 = 10, Envío: 50, Total = 60
+        self.assertEqual(compra_envio.subtotal_productos(), Decimal('10.00'))
+        self.assertEqual(compra_envio.total(), Decimal('60.00'))
+
+    def test_configuracion_compra_toggle(self):
+        from compras.models import ConfiguracionCompra
+        config = ConfiguracionCompra.obtener_configuracion()
+        self.assertTrue(config.permitir_editar_eliminar)
+
+        config.permitir_editar_eliminar = False
+        config.save()
+
+        config_reload = ConfiguracionCompra.obtener_configuracion()
+        self.assertFalse(config_reload.permitir_editar_eliminar)
+

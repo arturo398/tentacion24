@@ -1,0 +1,273 @@
+{% extends 'base.html' %}
+
+{% block titulo %}
+Editar Compra #{{ compra.id }}
+{% endblock %}
+
+{% block contenido %}
+<div class="container-fluid mt-3">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>✏️ Editar Compra #{{ compra.id }}</h2>
+        <a href="{% url 'listar_compras' %}" class="btn btn-outline-secondary">Volver al Listado</a>
+    </div>
+
+    <div class="row">
+        <!-- FORMULARIO DE EDICION -->
+        <div class="col-lg-5">
+            <div class="card shadow mb-4 border-0">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Añadir / Modificar Producto</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="proveedor" class="form-label fw-bold">Proveedor</label>
+                            <input type="text" id="proveedor" class="form-control" value="{{ compra.proveedor }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="valor-envio" class="form-label fw-bold">Valor del Envío ($)</label>
+                            <input type="number" id="valor-envio" class="form-control" min="0" step="0.01" value="{{ compra.valor_envio|stringformat:'.2f' }}">
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="mb-3">
+                        <label for="producto-select" class="form-label fw-bold">Producto</label>
+                        <select id="producto-select" class="form-select">
+                            <option value="">Seleccione un producto...</option>
+                            {% for producto in productos %}
+                            <option value="{{ producto.id }}" data-nombre="{{ producto.nombre }}" data-costo="{{ producto.precio_compra }}">
+                                {{ producto.nombre }} (Stock actual: {{ producto.stock }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="cantidad" class="form-label fw-bold">Cantidad Unidades</label>
+                            <input type="number" id="cantidad" class="form-control" min="1" value="1">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="costo" class="form-label fw-bold">Costo Unitario ($)</label>
+                            <input type="number" id="costo" class="form-control" min="0" step="0.01" value="0.00">
+                        </div>
+                    </div>
+
+                    <button type="button" id="btn-agregar-item" class="btn btn-dark w-100 mt-2">
+                        Añadir / Actualizar Ítem
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- LISTA DE PRODUCTOS DE LA COMPRA -->
+        <div class="col-lg-7">
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0">Productos en esta Compra</h5>
+                </div>
+                <div class="card-body">
+                    <div id="detalle-compra-list"></div>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4>Total Compra:</h4>
+                        <h2 id="total-compra">$0.00</h2>
+                    </div>
+                    <button type="button" id="btn-guardar-cambios" class="btn btn-warning w-100 btn-lg text-dark fw-bold">
+                        <i class="bi bi-save me-1"></i> Guardar Cambios en la Compra
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    let items = [
+        {% for detalle in compra.detalles.all %}
+        {
+            id: "{{ detalle.producto.id }}",
+            nombre: "{{ detalle.producto.nombre|escapejs }}",
+            cantidad: {{ detalle.cantidad }},
+            costo_unitario: parseFloat("{{ detalle.costo_unitario|stringformat:'.2f' }}") || 0
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    const prodSelect = document.getElementById("producto-select");
+    const cantInput = document.getElementById("cantidad");
+    const costoInput = document.getElementById("costo");
+    const btnAgregar = document.getElementById("btn-agregar-item");
+    const listDiv = document.getElementById("detalle-compra-list");
+    const totalHeader = document.getElementById("total-compra");
+    const btnGuardar = document.getElementById("btn-guardar-cambios");
+    const proveedorInput = document.getElementById("proveedor");
+    const valorEnvioInput = document.getElementById("valor-envio");
+
+    if (valorEnvioInput) {
+        valorEnvioInput.addEventListener("input", actualizarTabla);
+    }
+
+    prodSelect.addEventListener("change", () => {
+        const selectedOption = prodSelect.options[prodSelect.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+            const costoSugerido = parseFloat(selectedOption.dataset.costo || 0);
+            costoInput.value = costoSugerido.toFixed(2);
+        }
+    });
+
+    btnAgregar.addEventListener("click", () => {
+        const prodId = prodSelect.value;
+        if (!prodId) {
+            alert("Seleccione un producto.");
+            return;
+        }
+
+        const selectedOption = prodSelect.options[prodSelect.selectedIndex];
+        const prodNombre = selectedOption.dataset.nombre;
+        const cant = parseInt(cantInput.value) || 0;
+        const costo = parseFloat(costoInput.value) || 0;
+
+        if (cant <= 0) {
+            alert("La cantidad debe ser mayor a 0.");
+            return;
+        }
+
+        const existente = items.find(item => String(item.id) === String(prodId));
+        if (existente) {
+            existente.cantidad = cant;
+            existente.costo_unitario = costo;
+        } else {
+            items.push({
+                id: prodId,
+                nombre: prodNombre,
+                cantidad: cant,
+                costo_unitario: costo
+            });
+        }
+        actualizarTabla();
+    });
+
+    function actualizarTabla() {
+        const valorEnvio = parseFloat(valorEnvioInput ? valorEnvioInput.value : 0) || 0;
+
+        if (items.length === 0) {
+            listDiv.innerHTML = '<p class="text-muted text-center py-3">No hay productos en esta compra.</p>';
+            totalHeader.textContent = `$${valorEnvio.toFixed(2)}`;
+            btnGuardar.disabled = true;
+            return;
+        }
+
+        let subtotalProd = 0;
+        let html = `
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cant. Unidades</th>
+                    <th>Costo U.</th>
+                    <th>Subtotal</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+        `;
+
+        items.forEach((item, index) => {
+            const subtotal = item.cantidad * item.costo_unitario;
+            subtotalProd += subtotal;
+            html += `
+                <tr>
+                    <td class="fw-bold">${item.nombre}</td>
+                    <td><span class="badge bg-primary fs-6">${item.cantidad} u.</span></td>
+                    <td>$${item.costo_unitario.toFixed(2)}</td>
+                    <td class="fw-bold text-success">$${subtotal.toFixed(2)}</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-item" data-index="${index}">
+                            <i class="bi bi-trash"></i> Eliminar
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        const totalFinal = subtotalProd + valorEnvio;
+
+        if (valorEnvio > 0) {
+            html += `
+                <tr class="border-top border-secondary">
+                    <td colspan="3" class="text-end fw-bold">Subtotal Productos:</td>
+                    <td colspan="2" class="fw-bold text-success">$${subtotalProd.toFixed(2)}</td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-end fw-bold text-primary">Costo de Envío:</td>
+                    <td colspan="2" class="fw-bold text-primary">+$${valorEnvio.toFixed(2)}</td>
+                </tr>
+            `;
+        }
+
+        html += `
+            </tbody>
+        </table>
+        `;
+        listDiv.innerHTML = html;
+        totalHeader.textContent = `$${totalFinal.toFixed(2)}`;
+        btnGuardar.disabled = false;
+
+        document.querySelectorAll(".btn-eliminar-item").forEach(btn => {
+            btn.onclick = () => {
+                const idx = parseInt(btn.dataset.index);
+                items.splice(idx, 1);
+                actualizarTabla();
+            };
+        });
+    }
+
+    actualizarTabla();
+
+    btnGuardar.onclick = async () => {
+        const proveedor = proveedorInput.value.trim();
+        if (!proveedor) {
+            alert("Ingrese el nombre del proveedor.");
+            return;
+        }
+
+        const valorEnvio = parseFloat(valorEnvioInput ? valorEnvioInput.value : 0) || 0;
+
+        btnGuardar.disabled = true;
+        btnGuardar.textContent = "Guardando cambios...";
+
+        try {
+            const res = await fetch("{% url 'editar_compra' compra.id %}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": "{{ csrf_token }}"
+                },
+                body: JSON.stringify({
+                    proveedor: proveedor,
+                    valor_envio: valorEnvio,
+                    productos: items
+                })
+            });
+
+            const data = await res.json();
+            if (data.ok) {
+                alert("Compra actualizada correctamente.");
+                window.location.href = "{% url 'listar_compras' %}";
+            } else {
+                alert("Error al actualizar la compra: " + data.error);
+                btnGuardar.disabled = false;
+                btnGuardar.textContent = "Guardar Cambios en la Compra";
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Ocurrió un error de red al intentar guardar los cambios.");
+            btnGuardar.disabled = false;
+            btnGuardar.textContent = "Guardar Cambios en la Compra";
+        }
+    };
+});
+</script>
+{% endblock %}

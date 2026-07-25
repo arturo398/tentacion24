@@ -22,6 +22,7 @@ Ventas
                         <th>ID Venta</th>
                         <th>Cliente</th>
                         <th>Fecha</th>
+                        <th>Envío</th>
                         <th>Total</th>
                         <th>Método de Pago</th>
                         <th>Estado</th>
@@ -37,6 +38,15 @@ Ventas
                         </td>
                         <td>{{ venta.cliente }}</td>
                         <td>{{ venta.fecha|date:"d/m/Y H:i" }}</td>
+                        <td>
+                            {% if venta.valor_envio > 0 %}
+                                <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 px-2 py-1">
+                                    +${{ venta.valor_envio }}
+                                </span>
+                            {% else %}
+                                <span class="text-muted small">$0.00</span>
+                            {% endif %}
+                        </td>
                         <td class="fw-bold text-success">${{ venta.total }}</td>
                         <td>
                             {% if venta.metodo_pago == 'efectivo' %}

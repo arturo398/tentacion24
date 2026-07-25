@@ -1,21 +1,44 @@
+from decimal import Decimal
 from django.db import models
 from inventario.models import Producto
 
 # Create your models here.
 class Compra(models.Model):
-
     proveedor = models.CharField(max_length=100)
-
+    valor_envio = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00
+    )
     fecha = models.DateTimeField(auto_now_add=True)
 
-    def total(self):
+    def subtotal_productos(self):
         return sum(
-            detalle.subtotal()
-            for detalle in self.detalles.all()
+            (detalle.subtotal() for detalle in self.detalles.all()),
+            Decimal('0.00')
         )
+
+    def total(self):
+        return self.subtotal_productos() + Decimal(str(self.valor_envio or 0))
 
     def __str__(self):
         return f"Compra #{self.id} - {self.proveedor}"
+
+
+class ConfiguracionCompra(models.Model):
+    permitir_editar_eliminar = models.BooleanField(
+        default=True,
+        verbose_name="Permitir editar o eliminar compras"
+    )
+
+    @classmethod
+    def obtener_configuracion(cls):
+        config, _ = cls.objects.get_or_create(id=1)
+        return config
+
+    def __str__(self):
+        return f"Configuración de Compras (Edición/Eliminación: {'Permitida' if self.permitir_editar_eliminar else 'Bloqueada'})"
+
     
 class DetalleCompra(models.Model):
 

@@ -157,13 +157,25 @@ Detalle Venta #{{ venta.id }} - Tentación 24
             <!-- Resumen Financiero -->
             <div class="card border-0 shadow-sm">
                 <div class="card-body p-4">
+                    {% if venta.valor_envio > 0 %}
+                    <div class="row mb-3 pb-3 border-bottom text-center">
+                        <div class="col-6 border-end">
+                            <span class="text-muted small fw-bold d-block mb-1">SUBTOTAL PRODUCTOS</span>
+                            <span class="fs-5 fw-bold text-dark">${{ venta.subtotal_productos }}</span>
+                        </div>
+                        <div class="col-6">
+                            <span class="text-muted small fw-bold d-block mb-1">VALOR DE ENVÍO</span>
+                            <span class="fs-5 fw-bold text-primary">+${{ venta.valor_envio }}</span>
+                        </div>
+                    </div>
+                    {% endif %}
                     <div class="row g-3 text-center">
                         <div class="col-4 border-end">
                             <span class="text-muted small fw-bold d-block mb-1">TOTAL DE VENTA</span>
                             <span class="fs-3 fw-bold text-success">${{ venta.total }}</span>
                         </div>
                         <div class="col-4 border-end">
-                            <span class="text-muted small fw-bold d-block mb-1">COSTO TOTAL</span>
+                            <span class="text-muted small fw-bold d-block mb-1">COSTO PRODUCTOS</span>
                             <span class="fs-3 fw-bold text-danger">${{ venta.costo_total }}</span>
                         </div>
                         <div class="col-4">
@@ -171,6 +183,11 @@ Detalle Venta #{{ venta.id }} - Tentación 24
                             <span class="fs-3 fw-bold text-info">${{ venta.ganancia }}</span>
                         </div>
                     </div>
+                    {% if venta.valor_envio > 0 %}
+                    <div class="mt-3 text-center">
+                        <span class="badge bg-secondary-subtle text-secondary small fw-normal"><i class="bi bi-info-circle me-1"></i> El costo de envío (${{ venta.valor_envio }}) es tercerizado y se excluye de la ganancia neta.</span>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

@@ -19,9 +19,15 @@ Registrar Compra
                     <h5 class="mb-0">Añadir Producto a la Compra</h5>
                 </div>
                 <div class="card-body">
-                    <div class="mb-3">
-                        <label for="proveedor" class="form-label fw-bold">Proveedor</label>
-                        <input type="text" id="proveedor" class="form-control" placeholder="Nombre del proveedor..." value="Proveedor General">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="proveedor" class="form-label fw-bold">Proveedor</label>
+                            <input type="text" id="proveedor" class="form-control" placeholder="Nombre del proveedor..." value="Proveedor General">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="valor-envio" class="form-label fw-bold">Valor del Envío ($)</label>
+                            <input type="number" id="valor-envio" class="form-control" min="0" step="0.01" value="0.00" placeholder="0.00">
+                        </div>
                     </div>
                     <hr>
                     <div class="mb-3">
@@ -169,6 +175,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const totalHeader = document.getElementById("total-compra");
     const btnFinalizar = document.getElementById("btn-finalizar-compra");
     const proveedorInput = document.getElementById("proveedor");
+    const valorEnvioInput = document.getElementById("valor-envio");
+
+    if (valorEnvioInput) {
+        valorEnvioInput.addEventListener("input", () => {
+            actualizarTabla();
+        });
+    }
 
     // Bultos / Packs
     const modoUnidades = document.getElementById("modo-unidades");
@@ -335,14 +348,15 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function actualizarTabla() {
+        const valorEnvio = parseFloat(valorEnvioInput ? valorEnvioInput.value : 0) || 0;
         if (items.length === 0) {
             listDiv.innerHTML = '<p class="text-muted text-center py-3">No hay productos añadidos a esta compra.</p>';
-            totalHeader.textContent = "$0.00";
+            totalHeader.textContent = `$${valorEnvio.toFixed(2)}`;
             btnFinalizar.disabled = true;
             return;
         }
 
-        let total = 0;
+        let subtotalProd = 0;
         let html = `
         <table class="table table-hover align-middle">
             <thead>
@@ -359,7 +373,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         items.forEach((item, index) => {
             const subtotal = item.cantidad * item.costo_unitario;
-            total += subtotal;
+            subtotalProd += subtotal;
             html += `
                 <tr>
                     <td class="fw-bold">${item.nombre}</td>
@@ -375,12 +389,27 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
         });
 
+        const totalFinal = subtotalProd + valorEnvio;
+
+        if (valorEnvio > 0) {
+            html += `
+                <tr class="border-top border-secondary">
+                    <td colspan="3" class="text-end fw-bold">Subtotal Productos:</td>
+                    <td colspan="2" class="fw-bold text-success">$${subtotalProd.toFixed(2)}</td>
+                </tr>
+                <tr>
+                    <td colspan="3" class="text-end fw-bold text-primary">Costo de Envío:</td>
+                    <td colspan="2" class="fw-bold text-primary">+$${valorEnvio.toFixed(2)}</td>
+                </tr>
+            `;
+        }
+
         html += `
             </tbody>
         </table>
         `;
         listDiv.innerHTML = html;
-        totalHeader.textContent = `$${total.toFixed(2)}`;
+        totalHeader.textContent = `$${totalFinal.toFixed(2)}`;
         btnFinalizar.disabled = false;
 
         document.querySelectorAll(".btn-eliminar-item").forEach(btn => {
@@ -399,6 +428,8 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        const valorEnvio = parseFloat(valorEnvioInput ? valorEnvioInput.value : 0) || 0;
+
         btnFinalizar.disabled = true;
         btnFinalizar.textContent = "Procesando...";
 
@@ -411,6 +442,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
                 body: JSON.stringify({
                     proveedor: proveedor,
+                    valor_envio: valorEnvio,
                     productos: items
                 })
             });

@@ -8,8 +8,15 @@ const mensajeDiv = document.getElementById("mensaje-pos");
 const botonFinalizar = document.getElementById("btn-finalizar");
 const searchInput = document.getElementById("pos-search");
 const clienteNombreInput = document.getElementById("cliente-nombre");
+const posValorEnvioInput = document.getElementById("pos-valor-envio");
 const categoriaBotones = document.querySelectorAll(".btn-categoria");
 const productoCols = document.querySelectorAll(".producto-col");
+
+if (posValorEnvioInput) {
+    posValorEnvioInput.addEventListener("input", () => {
+        actualizarCarrito();
+    });
+}
 
 let categoriaSeleccionada = "todos";
 let textoBusqueda = "";
@@ -153,12 +160,13 @@ function agregarAlCarrito(itemData) {
 
 function actualizarCarrito() {
     carritoDiv.innerHTML = "";
-    let total = 0;
+    let subtotalProductos = 0;
     let totalItems = 0;
+    const valorEnvio = parseFloat(posValorEnvioInput ? posValorEnvioInput.value : 0) || 0;
 
     carrito.forEach((producto) => {
         const subtotal = producto.precio * producto.cantidad;
-        total += subtotal;
+        subtotalProductos += subtotal;
         totalItems += producto.cantidad;
 
         carritoDiv.innerHTML += `
@@ -199,7 +207,8 @@ function actualizarCarrito() {
         `;
     }
 
-    totalDiv.innerHTML = "$" + total.toFixed(2);
+    const totalFinal = subtotalProductos + valorEnvio;
+    totalDiv.innerHTML = "$" + totalFinal.toFixed(2);
 
     document.querySelectorAll(".aumentar").forEach(boton => {
         boton.onclick = () => aumentarCantidad(boton.dataset.key);
@@ -263,6 +272,7 @@ async function finalizarVenta() {
     const clienteNombre = clienteNombreInput ? clienteNombreInput.value.trim() : "Consumidor Final";
     const checkedRadio = document.querySelector('input[name="metodo-pago"]:checked');
     const metodoPago = checkedRadio ? checkedRadio.value : "transferencia";
+    const valorEnvio = parseFloat(posValorEnvioInput ? posValorEnvioInput.value : 0) || 0;
 
     botonFinalizar.disabled = true;
     botonFinalizar.textContent = "Procesando...";
@@ -276,6 +286,7 @@ async function finalizarVenta() {
             body: JSON.stringify({
                 cliente: clienteNombre || "Consumidor Final",
                 metodo_pago: metodoPago,
+                valor_envio: valorEnvio,
                 productos: payloadProductos
             })
         });
@@ -285,6 +296,7 @@ async function finalizarVenta() {
         if (datos.ok) {
             actualizarStockTarjetas(datos.stock_actualizado);
             carrito = [];
+            if (posValorEnvioInput) posValorEnvioInput.value = "0.00";
             actualizarCarrito();
             mostrarMensaje(`🎉 Venta #${datos.venta} registrada correctamente. ¡Stock actualizado!`, "success");
         } else {

@@ -7,8 +7,25 @@ Reportes - Tentación 24
 {% block contenido %}
 
 <div class="container-fluid px-0">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <h1 class="h2 fw-bold mb-0"><i class="bi bi-graph-up text-primary"></i> Reportes de Desempeño</h1>
+        <div class="dropdown">
+            <button class="btn btn-outline-danger shadow-sm fw-bold dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-file-earmark-pdf-fill me-1"></i> Descargar Reporte PDF
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+                <li>
+                    <a class="dropdown-item py-2 fw-bold" href="{% url 'generar_pdf_reporte' %}?tipo=semanal">
+                        <i class="bi bi-calendar-week text-primary me-2"></i> PDF Semanal ({{ rango_semana }})
+                    </a>
+                </li>
+                <li>
+                    <a class="dropdown-item py-2 fw-bold" href="{% url 'generar_pdf_reporte' %}?tipo=mensual">
+                        <i class="bi bi-calendar-month text-warning me-2"></i> PDF Mensual (Mes en Curso)
+                    </a>
+                </li>
+            </ul>
+        </div>
     </div>
 
     <!-- Hoy -->
@@ -37,6 +54,37 @@ Reportes - Tentación 24
                 <div class="card-body p-1">
                     <h6 class="text-muted text-uppercase fw-bold small mb-1">Ventas Hoy</h6>
                     <h2 class="fw-extrabold mb-0">{{ cantidad_ventas_hoy }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Semana Actual (Lunes a Domingo) -->
+    <h4 class="fw-bold mb-3"><i class="bi bi-calendar-week text-primary"></i> Resumen de esta Semana <span class="fs-6 text-muted font-monospace">({{ rango_semana }})</span></h4>
+    <div class="row g-2 g-md-4 mb-4">
+        <div class="col-6 col-md-4">
+            <div class="card border-0 shadow-sm h-100 p-2 reporte-stat-card">
+                <div class="card-body p-1">
+                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Facturación Semanal</h6>
+                    <h2 class="fw-extrabold text-success mb-0">${{ facturacion_semana }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-6 col-md-4">
+            <div class="card border-0 shadow-sm h-100 p-2 reporte-stat-card">
+                <div class="card-body p-1">
+                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Ganancia Semanal</h6>
+                    <h2 class="fw-extrabold text-info mb-0">${{ ganancia_semana }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-4">
+            <div class="card border-0 shadow-sm h-100 p-2 reporte-stat-card">
+                <div class="card-body p-1">
+                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Ventas Semanales</h6>
+                    <h2 class="fw-extrabold mb-0">{{ cantidad_ventas_semana }}</h2>
                 </div>
             </div>
         </div>

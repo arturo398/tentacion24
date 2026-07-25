@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.db import models
 from inventario.models import Producto
 from django.contrib.auth.models import User
@@ -31,14 +32,24 @@ class Venta(models.Model):
         default="Consumidor Final"
     )
 
+    valor_envio = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=0.00
+    )
+
     fecha = models.DateTimeField(
         auto_now_add=True
     )
-    def total(self):
+
+    def subtotal_productos(self):
         return sum(
-            detalle.subtotal()
-            for detalle in self.detalles.all()
+            (detalle.subtotal() for detalle in self.detalles.all()),
+            Decimal('0.00')
         )
+
+    def total(self):
+        return self.subtotal_productos() + Decimal(str(self.valor_envio or 0))
     
     def costo_total(self):
 
@@ -50,7 +61,7 @@ class Venta(models.Model):
         return total
     
     def ganancia(self):
-        return self.total() - self.costo_total()
+        return self.subtotal_productos() - Decimal(str(self.costo_total()))
     
 
     def __str__(self):

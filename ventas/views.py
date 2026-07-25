@@ -194,6 +194,7 @@ def finalizar_venta_api(request):
         datos = json.loads(request.body)
         cliente = datos.get("cliente", "Consumidor Final")
         metodo_pago = datos.get("metodo_pago", "transferencia")
+        valor_envio = float(datos.get("valor_envio", 0))
         items = datos.get("productos", [])
 
         if not items:
@@ -206,6 +207,7 @@ def finalizar_venta_api(request):
                 cliente=cliente,
                 vendedor=request.user,
                 metodo_pago=metodo_pago,
+                valor_envio=valor_envio,
                 finalizada=False
             )
 

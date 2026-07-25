@@ -180,3 +180,20 @@ class VentaModelRestriccionesTest(TestCase):
         # Stock should be restored
         self.producto.refresh_from_db()
         self.assertEqual(self.producto.stock, 10)
+
+    def test_venta_total_and_ganancia_with_valor_envio(self):
+        from decimal import Decimal
+        venta_envio = Venta.objects.create(cliente="Cliente Test", valor_envio=25.00)
+        DetalleVenta.objects.create(
+            venta=venta_envio,
+            producto=self.producto,
+            cantidad=2,
+            precio_unitario=15.00
+        )
+        # Subtotal productos: 2 * 15 = 30. Total Venta = 30 + 25 = 55.
+        # Costo productos = 2 * 10 = 20. Ganancia Neta (excluyendo envío tercerizado) = 30 - 20 = 10.
+        self.assertEqual(venta_envio.subtotal_productos(), Decimal('30.00'))
+        self.assertEqual(venta_envio.total(), Decimal('55.00'))
+        self.assertEqual(venta_envio.costo_total(), Decimal('20.00'))
+        self.assertEqual(venta_envio.ganancia(), Decimal('10.00'))
+
