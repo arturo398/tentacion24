@@ -52,16 +52,14 @@ class Venta(models.Model):
         return self.subtotal_productos() + Decimal(str(self.valor_envio or 0))
     
     def costo_total(self):
-
-        total = 0
-
+        total = Decimal('0.00')
         for detalle in self.detalles.all():
-            total += detalle.cantidad * detalle.producto.precio_compra
-
+            if getattr(detalle, 'producto', None) and getattr(detalle.producto, 'precio_compra', None):
+                total += Decimal(str(detalle.cantidad)) * Decimal(str(detalle.producto.precio_compra))
         return total
-    
+
     def ganancia(self):
-        return self.subtotal_productos() - Decimal(str(self.costo_total()))
+        return self.subtotal_productos() - self.costo_total()
     
 
     def __str__(self):

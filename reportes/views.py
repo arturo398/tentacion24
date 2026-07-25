@@ -36,13 +36,13 @@ def reportes(request):
     proximo_lunes = lunes_actual + timedelta(days=7)
 
     # Métricas Hoy
-    ventas_hoy = Venta.objects.filter(fecha__date=hoy)
+    ventas_hoy = Venta.objects.filter(fecha__date=hoy).prefetch_related('detalles__producto')
     facturacion_hoy = sum((venta.total() for venta in ventas_hoy), Decimal('0.00'))
     ganancia_hoy = sum((venta.ganancia() for venta in ventas_hoy), Decimal('0.00'))
     cantidad_ventas_hoy = ventas_hoy.count()
 
     # Métricas Semanal (Lunes a Lunes)
-    ventas_semana = Venta.objects.filter(fecha__date__gte=lunes_actual, fecha__date__lt=proximo_lunes)
+    ventas_semana = Venta.objects.filter(fecha__date__gte=lunes_actual, fecha__date__lt=proximo_lunes).prefetch_related('detalles__producto')
     facturacion_semana = sum((venta.total() for venta in ventas_semana), Decimal('0.00'))
     ganancia_semana = sum((venta.ganancia() for venta in ventas_semana), Decimal('0.00'))
     cantidad_ventas_semana = ventas_semana.count()
@@ -51,7 +51,7 @@ def reportes(request):
     ventas_mes = Venta.objects.filter(
         fecha__year=ahora.year,
         fecha__month=ahora.month
-    )
+    ).prefetch_related('detalles__producto')
     facturacion_mes = sum((venta.total() for venta in ventas_mes), Decimal('0.00'))
     ganancia_mes = sum((venta.ganancia() for venta in ventas_mes), Decimal('0.00'))
     cantidad_ventas_mes = ventas_mes.count()
@@ -64,8 +64,9 @@ def reportes(request):
     )
 
     comisiones = []
+    todas_ventas = Venta.objects.prefetch_related('detalles__producto')
     for usuario in User.objects.all():
-        ventas_usuario = Venta.objects.filter(vendedor=usuario)
+        ventas_usuario = [v for v in todas_ventas if v.vendedor_id == usuario.id]
         ganancia_total = sum((venta.ganancia() for venta in ventas_usuario), Decimal('0.00'))
         comision = ganancia_total * Decimal('0.20')
 
