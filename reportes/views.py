@@ -37,14 +37,14 @@ def reportes(request):
 
     # Métricas Hoy
     ventas_hoy = Venta.objects.filter(fecha__date=hoy)
-    facturacion_hoy = sum(venta.total() for venta in ventas_hoy)
-    ganancia_hoy = sum(venta.ganancia() for venta in ventas_hoy)
+    facturacion_hoy = sum((venta.total() for venta in ventas_hoy), Decimal('0.00'))
+    ganancia_hoy = sum((venta.ganancia() for venta in ventas_hoy), Decimal('0.00'))
     cantidad_ventas_hoy = ventas_hoy.count()
 
     # Métricas Semanal (Lunes a Lunes)
     ventas_semana = Venta.objects.filter(fecha__date__gte=lunes_actual, fecha__date__lt=proximo_lunes)
-    facturacion_semana = sum(venta.total() for venta in ventas_semana)
-    ganancia_semana = sum(venta.ganancia() for venta in ventas_semana)
+    facturacion_semana = sum((venta.total() for venta in ventas_semana), Decimal('0.00'))
+    ganancia_semana = sum((venta.ganancia() for venta in ventas_semana), Decimal('0.00'))
     cantidad_ventas_semana = ventas_semana.count()
 
     # Métricas Mes Actual
@@ -52,8 +52,8 @@ def reportes(request):
         fecha__year=ahora.year,
         fecha__month=ahora.month
     )
-    facturacion_mes = sum(venta.total() for venta in ventas_mes)
-    ganancia_mes = sum(venta.ganancia() for venta in ventas_mes)
+    facturacion_mes = sum((venta.total() for venta in ventas_mes), Decimal('0.00'))
+    ganancia_mes = sum((venta.ganancia() for venta in ventas_mes), Decimal('0.00'))
     cantidad_ventas_mes = ventas_mes.count()
 
     top_productos = (
@@ -66,7 +66,7 @@ def reportes(request):
     comisiones = []
     for usuario in User.objects.all():
         ventas_usuario = Venta.objects.filter(vendedor=usuario)
-        ganancia_total = sum(venta.ganancia() for venta in ventas_usuario)
+        ganancia_total = sum((venta.ganancia() for venta in ventas_usuario), Decimal('0.00'))
         comision = ganancia_total * Decimal('0.20')
 
         comisiones.append({
@@ -152,8 +152,8 @@ def generar_pdf_reporte(request):
     elements.append(Spacer(1, 10))
 
     # Métricas del Período Seleccionado
-    facturacion_periodo = sum(v.total() for v in ventas_periodo)
-    ganancia_periodo = sum(v.ganancia() for v in ventas_periodo)
+    facturacion_periodo = sum((v.total() for v in ventas_periodo), Decimal('0.00'))
+    ganancia_periodo = sum((v.ganancia() for v in ventas_periodo), Decimal('0.00'))
     cantidad_ventas = ventas_periodo.count()
 
     summary_data = [
@@ -219,7 +219,7 @@ def generar_pdf_reporte(request):
     com_data = [['Vendedor', 'Ganancia Generada en Período', 'Comisión (20%)']]
     for usuario in User.objects.all():
         ventas_u = ventas_periodo.filter(vendedor=usuario)
-        ganancia_u = sum(v.ganancia() for v in ventas_u)
+        ganancia_u = sum((v.ganancia() for v in ventas_u), Decimal('0.00'))
         if ganancia_u > 0 or usuario.is_superuser:
             comision = ganancia_u * Decimal('0.20')
             com_data.append([usuario.username, f"${ganancia_u:.2f}", f"${comision:.2f}"])
