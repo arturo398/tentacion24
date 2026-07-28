@@ -6,6 +6,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from ventas.models import Venta, DetalleVenta
+from compras.models import Compra
+from inventario.models import ConfiguracionCaja
 from django.utils import timezone
 from django.db.models import Sum
 from django.http import HttpResponse
@@ -14,6 +16,13 @@ from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+
+
+MESES_NOMBRES = {
+    1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+    5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+    9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+}
 
 
 @login_required
@@ -29,6 +38,20 @@ def reportes(request):
 
     hoy = timezone.localdate()
     ahora = timezone.localtime()
+
+    # Capturar mes y año seleccionados (GET)
+    try:
+        mes_sel = int(request.GET.get('mes', ahora.month))
+    except (ValueError, TypeError):
+        mes_sel = ahora.month
+
+    try:
+        anio_sel = int(request.GET.get('anio', ahora.year))
+    except (ValueError, TypeError):
+        anio_sel = ahora.year
+
+    if mes_sel not in MESES_NOMBRES:
+        mes_sel = ahora.month
 
     # Cálculo de Semana de Lunes a Lunes (Lunes 00:00:00 a Próximo Lunes 00:00:00)
     lunes_actual = hoy - timedelta(days=hoy.weekday())
@@ -47,14 +70,16 @@ def reportes(request):
     ganancia_semana = sum((venta.ganancia() for venta in ventas_semana), Decimal('0.00'))
     cantidad_ventas_semana = ventas_semana.count()
 
-    # Métricas Mes Actual
+    # Métricas Mes Seleccionado
     ventas_mes = Venta.objects.filter(
-        fecha__year=ahora.year,
-        fecha__month=ahora.month
+        fecha__year=anio_sel,
+        fecha__month=mes_sel
     ).prefetch_related('detalles__producto')
     facturacion_mes = sum((venta.total() for venta in ventas_mes), Decimal('0.00'))
     ganancia_mes = sum((venta.ganancia() for venta in ventas_mes), Decimal('0.00'))
     cantidad_ventas_mes = ventas_mes.count()
+
+    nombre_mes_sel = MESES_NOMBRES.get(mes_sel, '')
 
     top_productos = (
         DetalleVenta.objects
@@ -78,6 +103,23 @@ def reportes(request):
 
     rango_semana = f"Lunes {lunes_actual.strftime('%d/%m')} al Domingo {domingo_actual.strftime('%d/%m')}"
 
+    caja_config = ConfiguracionCaja.obtener_configuracion()
+    caja_inicial = caja_config.monto_inicial
+    fecha_inicio_caja = caja_config.fecha_inicio_caja
+
+    ventas_caja = Venta.objects.filter(fecha__date__gte=fecha_inicio_caja)
+    compras_caja = Compra.objects.filter(fecha__date__gte=fecha_inicio_caja)
+    compras_inversion = Compra.objects.filter(fecha__date__lt=fecha_inicio_caja)
+
+    facturacion_caja = sum((v.total() for v in ventas_caja), Decimal('0.00'))
+    compras_caja_monetario = sum((c.total() for c in compras_caja), Decimal('0.00'))
+    inversion_inicial = sum((c.total() for c in compras_inversion), Decimal('0.00'))
+
+    saldo_caja = Decimal(str(caja_inicial)) + facturacion_caja - compras_caja_monetario
+
+    meses_opciones = [{'numero': k, 'nombre': v} for k, v in MESES_NOMBRES.items()]
+    anios_opciones = list(range(2025, ahora.year + 2))
+
     contexto = {
         'facturacion_hoy': facturacion_hoy,
         'ganancia_hoy': ganancia_hoy,
@@ -90,7 +132,18 @@ def reportes(request):
         'ganancia_mes': ganancia_mes,
         'cantidad_ventas_mes': cantidad_ventas_mes,
         'top_productos': top_productos,
-        'comisiones': comisiones
+        'comisiones': comisiones,
+        'caja_inicial': caja_inicial,
+        'fecha_inicio_caja': fecha_inicio_caja,
+        'facturacion_caja': facturacion_caja,
+        'compras_caja_monetario': compras_caja_monetario,
+        'inversion_inicial': inversion_inicial,
+        'saldo_caja': saldo_caja,
+        'mes_sel': mes_sel,
+        'anio_sel': anio_sel,
+        'nombre_mes_sel': nombre_mes_sel,
+        'meses_opciones': meses_opciones,
+        'anios_opciones': anios_opciones,
     }
 
     return render(request, 'reportes/reportes.html', contexto)
@@ -121,11 +174,22 @@ def generar_pdf_reporte(request):
         nombre_archivo = f"reporte_semanal_tentacion24_{lunes_actual.strftime('%Y%m%d')}.pdf"
         subtitulo_periodo = f"Período Semanal: Lunes {lunes_actual.strftime('%d/%m/%Y')} al Domingo {domingo_actual.strftime('%d/%m/%Y')}"
     else: # mensual
-        ventas_periodo = Venta.objects.filter(fecha__year=ahora.year, fecha__month=ahora.month)
+        try:
+            mes_sel = int(request.GET.get('mes', ahora.month))
+        except (ValueError, TypeError):
+            mes_sel = ahora.month
+
+        try:
+            anio_sel = int(request.GET.get('anio', ahora.year))
+        except (ValueError, TypeError):
+            anio_sel = ahora.year
+
+        nombre_mes = MESES_NOMBRES.get(mes_sel, str(mes_sel))
+        ventas_periodo = Venta.objects.filter(fecha__year=anio_sel, fecha__month=mes_sel)
         detalles_periodo = DetalleVenta.objects.filter(venta__in=ventas_periodo)
-        titulo_pdf = f"TENTACIÓN 24 - Reporte Mensual ({ahora.strftime('%m/%Y')})"
-        nombre_archivo = f"reporte_mensual_tentacion24_{ahora.strftime('%Y%m')}.pdf"
-        subtitulo_periodo = f"Período Mensual: {ahora.strftime('%B %Y').capitalize()}"
+        titulo_pdf = f"TENTACIÓN 24 - Reporte Mensual ({nombre_mes} {anio_sel})"
+        nombre_archivo = f"reporte_mensual_{nombre_mes.lower()}_{anio_sel}.pdf"
+        subtitulo_periodo = f"Período Mensual: {nombre_mes} {anio_sel}"
 
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=36, leftMargin=36, topMargin=36, bottomMargin=36)

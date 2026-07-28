@@ -17,5 +17,6 @@ urlpatterns = [
     path('combos/<int:pk>/editar/', views.editar_combo, name='editar_combo'),
     path('combos/<int:pk>/eliminar/', views.eliminar_combo, name='eliminar_combo'),
 
+    path('actualizar-caja/', views.actualizar_caja_inicial, name='actualizar_caja_inicial'),
     path('', views.dashboard, name='dashboard'),
 ]

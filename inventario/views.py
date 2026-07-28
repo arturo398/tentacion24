@@ -3,7 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db import transaction
-from .models import Producto, PresentacionProducto, Combo, ElementoCombo
+from decimal import Decimal
+from .models import Producto, PresentacionProducto, Combo, ElementoCombo, ConfiguracionCaja
 from .forms import ProductoForm, PresentacionProductoForm, ComboForm
 from compras.models import Compra
 from ventas.models import Venta
@@ -231,12 +232,30 @@ def dashboard(request):
     productos_stock_bajo = Producto.objects.filter(stock__lte=F('stock_minimo'))
     total_ventas = Venta.objects.count()
     total_compras = Compra.objects.count()
-    ventas = Venta.objects.all()
-    compras = Compra.objects.all()
+    ventas_todas = Venta.objects.all()
+    compras_todas = Compra.objects.all()
 
-    facturacion_total = sum(venta.total() for venta in ventas)
-    ganancia_total = sum(venta.ganancia() for venta in ventas)
-    compras_total_monetario = sum(compra.total() for compra in compras)
+    caja_config = ConfiguracionCaja.obtener_configuracion()
+    caja_inicial = caja_config.monto_inicial
+    fecha_inicio_caja = caja_config.fecha_inicio_caja
+
+    # Filtrar ventas y compras operativas desde la fecha de inicio de caja (ej. 13/06/2026)
+    ventas_caja = Venta.objects.filter(fecha__date__gte=fecha_inicio_caja)
+    compras_caja = Compra.objects.filter(fecha__date__gte=fecha_inicio_caja)
+    compras_inversion = Compra.objects.filter(fecha__date__lt=fecha_inicio_caja)
+
+    facturacion_total = sum(venta.total() for venta in ventas_todas)
+    ganancia_total = sum(venta.ganancia() for venta in ventas_todas)
+    compras_total_monetario = sum(compra.total() for compra in compras_todas)
+
+    # Flujo de caja exclusivo desde fecha_inicio_caja
+    facturacion_caja = sum(v.total() for v in ventas_caja)
+    compras_caja_monetario = sum(c.total() for c in compras_caja)
+    inversion_inicial = sum(c.total() for c in compras_inversion)
+
+    # Saldo Neto en Caja = Caja Inicial Adicional + Ventas (desde inicio) - Compras Operativas (desde inicio)
+    saldo_caja = Decimal(str(caja_inicial)) + Decimal(str(facturacion_caja)) - Decimal(str(compras_caja_monetario))
+
     ultimas_ventas = Venta.objects.order_by('-fecha')[:5]
 
     contexto = {
@@ -248,7 +267,36 @@ def dashboard(request):
         'ultimas_ventas': ultimas_ventas,
         'facturacion_total': facturacion_total,
         'ganancia_total': ganancia_total,
-        'compras_total_monetario': compras_total_monetario
+        'compras_total_monetario': compras_total_monetario,
+        'caja_inicial': caja_inicial,
+        'fecha_inicio_caja': fecha_inicio_caja,
+        'facturacion_caja': facturacion_caja,
+        'compras_caja_monetario': compras_caja_monetario,
+        'inversion_inicial': inversion_inicial,
+        'saldo_caja': saldo_caja,
     }
 
     return render(request, 'inventario/dashboard.html', contexto)
+
+
+@login_required
+def actualizar_caja_inicial(request):
+    if not request.user.is_superuser:
+        messages.error(request, "Se requieren permisos de administrador para modificar la configuración de caja.")
+        return redirect('dashboard')
+
+    if request.method == 'POST':
+        try:
+            nuevo_monto = request.POST.get('monto_inicial', '0').replace(',', '.').strip()
+            nueva_fecha = request.POST.get('fecha_inicio_caja')
+
+            config = ConfiguracionCaja.obtener_configuracion()
+            config.monto_inicial = Decimal(nuevo_monto)
+            if nueva_fecha:
+                config.fecha_inicio_caja = datetime.strptime(nueva_fecha, '%Y-%m-%d').date()
+            config.save()
+            messages.success(request, f"Control de Caja actualizado a partir del {config.fecha_inicio_caja.strftime('%d/%m/%Y')}")
+        except Exception as e:
+            messages.error(request, f"Error al actualizar la configuración de caja: {e}")
+
+    return redirect('dashboard')

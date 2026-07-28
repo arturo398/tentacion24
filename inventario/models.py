@@ -1,3 +1,4 @@
+import datetime
 from django.db import models
 
 class Producto(models.Model):
@@ -71,3 +72,24 @@ class ElementoCombo(models.Model):
 
     def __str__(self):
         return f"{self.cantidad}x {self.producto.nombre} en {self.combo.nombre}"
+
+
+class ConfiguracionCaja(models.Model):
+    fecha_inicio_caja = models.DateField(
+        default=datetime.date(2026, 6, 13),
+        verbose_name="Fecha Inicio Control de Caja"
+    )
+    monto_inicial = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0.00,
+        verbose_name="Monto o Aporte Inicial Adicional de Caja"
+    )
+
+    @classmethod
+    def obtener_configuracion(cls):
+        config, _ = cls.objects.get_or_create(id=1)
+        return config
+
+    def __str__(self):
+        return f"Configuración de Caja (Inicio: {self.fecha_inicio_caja}, Inicial: ${self.monto_inicial})"

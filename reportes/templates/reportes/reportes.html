@@ -20,8 +20,8 @@ Reportes - Tentación 24
                     </a>
                 </li>
                 <li>
-                    <a class="dropdown-item py-2 fw-bold" href="{% url 'generar_pdf_reporte' %}?tipo=mensual">
-                        <i class="bi bi-calendar-month text-warning me-2"></i> PDF Mensual (Mes en Curso)
+                    <a class="dropdown-item py-2 fw-bold" href="{% url 'generar_pdf_reporte' %}?tipo=mensual&mes={{ mes_sel }}&anio={{ anio_sel }}">
+                        <i class="bi bi-calendar-month text-warning me-2"></i> PDF Mensual ({{ nombre_mes_sel }} {{ anio_sel }})
                     </a>
                 </li>
             </ul>
@@ -90,13 +90,35 @@ Reportes - Tentación 24
         </div>
     </div>
 
-    <!-- Mes Actual -->
-    <h4 class="fw-bold mb-3"><i class="bi bi-calendar-month text-warning"></i> Resumen de este Mes</h4>
+    <!-- Resumen Mensual (con Selector) -->
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h4 class="fw-bold mb-0">
+            <i class="bi bi-calendar-month text-warning me-1"></i> 
+            Resumen Mensual: <span class="text-primary">{{ nombre_mes_sel }} {{ anio_sel }}</span>
+        </h4>
+        <form method="get" class="d-flex align-items-center gap-2">
+            <label for="selectMes" class="form-label small fw-semibold text-secondary mb-0 d-none d-sm-inline">Filtrar período:</label>
+            <select name="mes" id="selectMes" class="form-select form-select-sm fw-semibold border-secondary-subtle" onchange="this.form.submit()">
+                {% for m in meses_opciones %}
+                <option value="{{ m.numero }}" {% if m.numero == mes_sel %}selected{% endif %}>
+                    {{ m.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+            <select name="anio" id="selectAnio" class="form-select form-select-sm fw-semibold border-secondary-subtle" onchange="this.form.submit()">
+                {% for a in anios_opciones %}
+                <option value="{{ a }}" {% if a == anio_sel %}selected{% endif %}>
+                    {{ a }}
+                </option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
     <div class="row g-2 g-md-4 mb-4">
         <div class="col-6 col-md-4">
             <div class="card border-0 shadow-sm h-100 p-2 reporte-stat-card">
                 <div class="card-body p-1">
-                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Facturación Mes</h6>
+                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Facturación {{ nombre_mes_sel }}</h6>
                     <h2 class="fw-extrabold text-success mb-0">${{ facturacion_mes }}</h2>
                 </div>
             </div>
@@ -105,7 +127,7 @@ Reportes - Tentación 24
         <div class="col-6 col-md-4">
             <div class="card border-0 shadow-sm h-100 p-2 reporte-stat-card">
                 <div class="card-body p-1">
-                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Ganancia Mes</h6>
+                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Ganancia {{ nombre_mes_sel }}</h6>
                     <h2 class="fw-extrabold text-info mb-0">${{ ganancia_mes }}</h2>
                 </div>
             </div>
@@ -114,8 +136,47 @@ Reportes - Tentación 24
         <div class="col-12 col-md-4">
             <div class="card border-0 shadow-sm h-100 p-2 reporte-stat-card">
                 <div class="card-body p-1">
-                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Ventas Mes</h6>
+                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Ventas {{ nombre_mes_sel }}</h6>
                     <h2 class="fw-extrabold mb-0">{{ cantidad_ventas_mes }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Balance y Estado de Caja -->
+    <h4 class="fw-bold mb-3"><i class="bi bi-piggy-bank text-primary me-1"></i> Estado General de Caja Operativa</h4>
+    <div class="row g-2 g-md-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 p-2 reporte-stat-card">
+                <div class="card-body p-1">
+                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Inversión Inicial (Stock)</h6>
+                    <h3 class="fw-extrabold text-secondary mb-0">${{ inversion_inicial }}</h3>
+                    <small class="text-muted opacity-75">Previo al {{ fecha_inicio_caja|date:"d/m/Y" }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-sm h-100 p-2 reporte-stat-card">
+                <div class="card-body p-1">
+                    <h6 class="text-muted text-uppercase fw-bold small mb-1">Compras Operativas</h6>
+                    <h3 class="fw-extrabold text-warning mb-0">${{ compras_caja_monetario }}</h3>
+                    <small class="text-muted opacity-75">Desde el {{ fecha_inicio_caja|date:"d/m/Y" }}</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-md-6">
+            <div class="card border-0 shadow-sm h-100 p-2 reporte-stat-card" style="background: linear-gradient(135deg, rgba(111, 66, 193, 0.12), rgba(111, 66, 193, 0.03)); border: 1px solid rgba(111, 66, 193, 0.25) !important;">
+                <div class="card-body p-1 d-flex justify-content-between align-items-center">
+                    <div>
+                        <div class="d-flex align-items-center gap-2 mb-1">
+                            <h6 class="text-primary text-uppercase fw-bold small mb-0">Saldo Neto en Caja Actual</h6>
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill">Desde {{ fecha_inicio_caja|date:"d/m/Y" }}</span>
+                        </div>
+                        <h2 class="fw-black mb-0 {% if saldo_caja >= 0 %}text-primary{% else %}text-danger{% endif %}" style="{% if saldo_caja >= 0 %}color: #a855f7 !important;{% endif %}">
+                            ${{ saldo_caja }}
+                        </h2>
+                    </div>
+                    <i class="bi bi-safe2 fs-1 text-primary opacity-50 me-2"></i>
                 </div>
             </div>
         </div>
