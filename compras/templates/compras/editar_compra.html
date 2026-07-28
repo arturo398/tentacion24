@@ -149,6 +149,21 @@ document.addEventListener("DOMContentLoaded", () => {
         actualizarTabla();
     });
 
+    function recalcularTotalesTabla() {
+        const valorEnvio = parseFloat(valorEnvioInput ? valorEnvioInput.value : 0) || 0;
+        let subtotalProd = 0;
+        items.forEach((item, index) => {
+            const subtotal = item.cantidad * item.costo_unitario;
+            subtotalProd += subtotal;
+            const subCell = document.querySelector(`.subtotal-cell-${index}`);
+            if (subCell) subCell.textContent = `$${subtotal.toFixed(2)}`;
+        });
+        const subtotalElement = document.getElementById("subtotal-prod-display");
+        if (subtotalElement) subtotalElement.textContent = `$${subtotalProd.toFixed(2)}`;
+        const totalFinal = subtotalProd + valorEnvio;
+        totalHeader.textContent = `$${totalFinal.toFixed(2)}`;
+    }
+
     function actualizarTabla() {
         const valorEnvio = parseFloat(valorEnvioInput ? valorEnvioInput.value : 0) || 0;
 
@@ -161,14 +176,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let subtotalProd = 0;
         let html = `
+        <div class="table-responsive">
         <table class="table table-hover align-middle">
             <thead>
                 <tr>
                     <th>Producto</th>
-                    <th>Cant. Unidades</th>
-                    <th>Costo U.</th>
+                    <th style="width: 120px;">Cant. Unidades</th>
+                    <th style="width: 145px;">Costo U. ($)</th>
                     <th>Subtotal</th>
-                    <th>Acciones</th>
+                    <th class="text-end" style="width: 100px;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -179,13 +195,34 @@ document.addEventListener("DOMContentLoaded", () => {
             subtotalProd += subtotal;
             html += `
                 <tr>
-                    <td class="fw-bold">${item.nombre}</td>
-                    <td><span class="badge bg-primary fs-6">${item.cantidad} u.</span></td>
-                    <td>$${item.costo_unitario.toFixed(2)}</td>
-                    <td class="fw-bold text-success">$${subtotal.toFixed(2)}</td>
+                    <td class="fw-bold align-middle">${item.nombre}</td>
                     <td>
-                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-item" data-index="${index}">
-                            <i class="bi bi-trash"></i> Eliminar
+                        <input type="number" 
+                               class="form-control form-control-sm text-center fw-bold input-cant-item" 
+                               data-index="${index}" 
+                               min="1" 
+                               value="${item.cantidad}"
+                               title="Editar cantidad directamente">
+                    </td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text">$</span>
+                            <input type="number" 
+                                   class="form-control form-control-sm text-end fw-bold input-costo-item" 
+                                   data-index="${index}" 
+                                   min="0" 
+                                   step="0.01" 
+                                   value="${item.costo_unitario.toFixed(2)}"
+                                   title="Editar costo unitario directamente">
+                        </div>
+                    </td>
+                    <td class="fw-bold text-success align-middle subtotal-cell-${index}">$${subtotal.toFixed(2)}</td>
+                    <td class="text-end align-middle">
+                        <button type="button" class="btn btn-sm btn-outline-warning btn-cargar-form me-1" data-index="${index}" title="Cargar en el panel izquierdo">
+                            <i class="bi bi-pencil-fill"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-item" data-index="${index}" title="Eliminar ítem">
+                            <i class="bi bi-trash-fill"></i>
                         </button>
                     </td>
                 </tr>
@@ -198,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
             html += `
                 <tr class="border-top border-secondary">
                     <td colspan="3" class="text-end fw-bold">Subtotal Productos:</td>
-                    <td colspan="2" class="fw-bold text-success">$${subtotalProd.toFixed(2)}</td>
+                    <td colspan="2" class="fw-bold text-success" id="subtotal-prod-display">$${subtotalProd.toFixed(2)}</td>
                 </tr>
                 <tr>
                     <td colspan="3" class="text-end fw-bold text-primary">Costo de Envío:</td>
@@ -210,10 +247,44 @@ document.addEventListener("DOMContentLoaded", () => {
         html += `
             </tbody>
         </table>
+        </div>
         `;
         listDiv.innerHTML = html;
         totalHeader.textContent = `$${totalFinal.toFixed(2)}`;
         btnGuardar.disabled = false;
+
+        document.querySelectorAll(".input-cant-item").forEach(input => {
+            input.addEventListener("input", (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                const val = parseInt(e.target.value) || 0;
+                if (val > 0) {
+                    items[idx].cantidad = val;
+                    recalcularTotalesTabla();
+                }
+            });
+        });
+
+        document.querySelectorAll(".input-costo-item").forEach(input => {
+            input.addEventListener("input", (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                const val = parseFloat(e.target.value) || 0;
+                if (val >= 0) {
+                    items[idx].costo_unitario = val;
+                    recalcularTotalesTabla();
+                }
+            });
+        });
+
+        document.querySelectorAll(".btn-cargar-form").forEach(btn => {
+            btn.onclick = () => {
+                const idx = parseInt(btn.dataset.index);
+                const item = items[idx];
+                prodSelect.value = item.id;
+                cantInput.value = item.cantidad;
+                costoInput.value = item.costo_unitario.toFixed(2);
+                cantInput.focus();
+            };
+        });
 
         document.querySelectorAll(".btn-eliminar-item").forEach(btn => {
             btn.onclick = () => {
