@@ -107,9 +107,9 @@ def reportes(request):
     caja_inicial = caja_config.monto_inicial
     fecha_inicio_caja = caja_config.fecha_inicio_caja
 
-    ventas_caja = Venta.objects.filter(fecha__date__gte=fecha_inicio_caja)
-    compras_caja = Compra.objects.filter(fecha__date__gte=fecha_inicio_caja)
-    compras_inversion = Compra.objects.filter(fecha__date__lt=fecha_inicio_caja)
+    ventas_caja = Venta.objects.filter(fecha__date__gte=fecha_inicio_caja).prefetch_related('detalles__producto')
+    compras_caja = Compra.objects.filter(fecha__date__gte=fecha_inicio_caja).prefetch_related('detalles__producto')
+    compras_inversion = Compra.objects.filter(fecha__date__lt=fecha_inicio_caja).prefetch_related('detalles__producto')
 
     facturacion_caja = sum((v.total() for v in ventas_caja), Decimal('0.00'))
     compras_caja_monetario = sum((c.total() for c in compras_caja), Decimal('0.00'))

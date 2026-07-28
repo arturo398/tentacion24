@@ -232,29 +232,31 @@ def dashboard(request):
     productos_stock_bajo = Producto.objects.filter(stock__lte=F('stock_minimo'))
     total_ventas = Venta.objects.count()
     total_compras = Compra.objects.count()
-    ventas_todas = Venta.objects.all()
-    compras_todas = Compra.objects.all()
 
     caja_config = ConfiguracionCaja.obtener_configuracion()
     caja_inicial = caja_config.monto_inicial
     fecha_inicio_caja = caja_config.fecha_inicio_caja
 
-    # Filtrar ventas y compras operativas desde la fecha de inicio de caja (ej. 13/06/2026)
-    ventas_caja = Venta.objects.filter(fecha__date__gte=fecha_inicio_caja)
-    compras_caja = Compra.objects.filter(fecha__date__gte=fecha_inicio_caja)
-    compras_inversion = Compra.objects.filter(fecha__date__lt=fecha_inicio_caja)
+    # Pre-cargar todas las relaciones de una sola vez para optimizar rendimiento (evitar N+1 queries)
+    ventas_todas = list(Venta.objects.prefetch_related('detalles__producto'))
+    compras_todas = list(Compra.objects.prefetch_related('detalles__producto'))
 
-    facturacion_total = sum(venta.total() for venta in ventas_todas)
-    ganancia_total = sum(venta.ganancia() for venta in ventas_todas)
-    compras_total_monetario = sum(compra.total() for compra in compras_todas)
+    # Filtrar en memoria para evitar llamadas redundantes a la base de datos
+    ventas_caja = [v for v in ventas_todas if v.fecha.date() >= fecha_inicio_caja]
+    compras_caja = [c for c in compras_todas if c.fecha.date() >= fecha_inicio_caja]
+    compras_inversion = [c for c in compras_todas if c.fecha.date() < fecha_inicio_caja]
+
+    facturacion_total = sum((venta.total() for venta in ventas_todas), Decimal('0.00'))
+    ganancia_total = sum((venta.ganancia() for venta in ventas_todas), Decimal('0.00'))
+    compras_total_monetario = sum((compra.total() for compra in compras_todas), Decimal('0.00'))
 
     # Flujo de caja exclusivo desde fecha_inicio_caja
-    facturacion_caja = sum(v.total() for v in ventas_caja)
-    compras_caja_monetario = sum(c.total() for c in compras_caja)
-    inversion_inicial = sum(c.total() for c in compras_inversion)
+    facturacion_caja = sum((v.total() for v in ventas_caja), Decimal('0.00'))
+    compras_caja_monetario = sum((c.total() for c in compras_caja), Decimal('0.00'))
+    inversion_inicial = sum((c.total() for c in compras_inversion), Decimal('0.00'))
 
     # Saldo Neto en Caja = Caja Inicial Adicional + Ventas (desde inicio) - Compras Operativas (desde inicio)
-    saldo_caja = Decimal(str(caja_inicial)) + Decimal(str(facturacion_caja)) - Decimal(str(compras_caja_monetario))
+    saldo_caja = Decimal(str(caja_inicial)) + facturacion_caja - compras_caja_monetario
 
     ultimas_ventas = Venta.objects.order_by('-fecha')[:5]
 
