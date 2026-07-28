@@ -43,7 +43,14 @@
                 <a class="nav-link" href="/"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a>
                 {% endif %}
 
-                <a class="nav-link" href="/productos/"><i class="bi bi-box-seam me-1"></i> Productos</a>
+                <a class="nav-link d-inline-flex align-items-center gap-1" href="/productos/">
+                    <i class="bi bi-box-seam me-1"></i> Productos
+                    {% if stock_bajo_count > 0 %}
+                    <span class="badge bg-danger rounded-pill px-2 py-1 ms-1 animate-pulse" title="{{ stock_bajo_count }} productos en stock crítico">
+                        {{ stock_bajo_count }}
+                    </span>
+                    {% endif %}
+                </a>
 
                 {% if es_admin %}
                 <a class="nav-link" href="{% url 'combos' %}"><i class="bi bi-gift me-1"></i> Combos</a>

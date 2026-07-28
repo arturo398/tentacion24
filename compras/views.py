@@ -13,11 +13,28 @@ def listar_compras(request):
         messages.error(request, "No tienes permiso para acceder a Compras.")
         return redirect('productos')
 
-    compras = Compra.objects.all().order_by('-fecha')
+    busqueda = request.GET.get('q', '').strip()
+    fecha_inicio = request.GET.get('fecha_inicio', '').strip()
+    fecha_fin = request.GET.get('fecha_fin', '').strip()
+
+    queryset = Compra.objects.prefetch_related('detalles__producto').order_by('-fecha')
+
+    if busqueda:
+        queryset = queryset.filter(proveedor__icontains=busqueda)
+
+    if fecha_inicio:
+        queryset = queryset.filter(fecha__date__gte=fecha_inicio)
+
+    if fecha_fin:
+        queryset = queryset.filter(fecha__date__lte=fecha_fin)
+
     config = ConfiguracionCompra.obtener_configuracion()
     return render(request, 'compras/listar_compras.html', {
-        'compras': compras,
-        'config': config
+        'compras': queryset,
+        'config': config,
+        'busqueda': busqueda,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin
     })
 
 @login_required

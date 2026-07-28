@@ -2,8 +2,8 @@ import datetime
 from django.db import models
 
 class Producto(models.Model):
-    nombre = models.CharField(max_length=100)
-    categoria = models.CharField(max_length=100)
+    nombre = models.CharField(max_length=100, db_index=True)
+    categoria = models.CharField(max_length=100, db_index=True)
 
     precio_compra = models.DecimalField(
         max_digits=10,

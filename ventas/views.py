@@ -15,17 +15,37 @@ from .forms import NuevaVentaForm, AgregarProductoForm
 
 @login_required
 def listar_ventas(request):
+    busqueda = request.GET.get('q', '').strip()
+    metodo_pago = request.GET.get('metodo_pago', '').strip()
+    fecha_inicio = request.GET.get('fecha_inicio', '').strip()
+    fecha_fin = request.GET.get('fecha_fin', '').strip()
+
     if request.user.is_superuser:
-
-        ventas = Venta.objects.order_by('-fecha')
-
+        queryset = Venta.objects.select_related('vendedor').prefetch_related('detalles__producto').order_by('-fecha')
     else:
-
-        ventas = Venta.objects.filter(
+        queryset = Venta.objects.select_related('vendedor').prefetch_related('detalles__producto').filter(
             vendedor=request.user
         ).order_by('-fecha')
-    
-    return render(request, 'ventas/listar_ventas.html', {'ventas': ventas})
+
+    if busqueda:
+        queryset = queryset.filter(cliente__icontains=busqueda)
+
+    if metodo_pago:
+        queryset = queryset.filter(metodo_pago=metodo_pago)
+
+    if fecha_inicio:
+        queryset = queryset.filter(fecha__date__gte=fecha_inicio)
+
+    if fecha_fin:
+        queryset = queryset.filter(fecha__date__lte=fecha_fin)
+
+    return render(request, 'ventas/listar_ventas.html', {
+        'ventas': queryset,
+        'busqueda': busqueda,
+        'metodo_pago_sel': metodo_pago,
+        'fecha_inicio': fecha_inicio,
+        'fecha_fin': fecha_fin
+    })
 
 @login_required
 def detalle_venta(request, venta_id):

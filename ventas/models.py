@@ -39,7 +39,8 @@ class Venta(models.Model):
     )
 
     fecha = models.DateTimeField(
-        auto_now_add=True
+        auto_now_add=True,
+        db_index=True
     )
 
     def subtotal_productos(self):

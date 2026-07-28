@@ -10,7 +10,7 @@ class Compra(models.Model):
         decimal_places=2,
         default=0.00
     )
-    fecha = models.DateTimeField(auto_now_add=True)
+    fecha = models.DateTimeField(auto_now_add=True, db_index=True)
 
     def subtotal_productos(self):
         return sum(
